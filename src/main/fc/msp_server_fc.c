@@ -535,7 +535,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             sbufWriteU32(dst, CAP_DYNBALANCE); // "capability"
             break;
 
-        case MSP_STATUS_EX:
         case MSP_STATUS:
             sbufWriteU16(dst, cycleTime);
 #ifdef USE_I2C
@@ -546,9 +545,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             sbufWriteU16(dst, sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_SONAR) << 4);
             sbufWriteU32(dst, packFlightModeFlags());
             sbufWriteU8(dst, getCurrentProfile());
-            if(cmd->cmd == MSP_STATUS_EX) {
-                sbufWriteU16(dst, averageSystemLoadPercent);
-            }
+            sbufWriteU16(dst, averageSystemLoadPercent);
             break;
 
         case MSP_RAW_IMU: {
@@ -648,10 +645,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
         case MSP_ARMING_CONFIG:
             sbufWriteU8(dst, armingConfig()->auto_disarm_delay);
             sbufWriteU8(dst, armingConfig()->disarm_kill_switch);
-            break;
-
-        case MSP_LOOP_TIME:
-            sbufWriteU16(dst, imuConfig()->looptime);
             break;
 
         case MSP_RC_TUNING:
@@ -1075,10 +1068,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
         case MSP_SET_ARMING_CONFIG:
             armingConfig()->auto_disarm_delay = sbufReadU8(src);
             armingConfig()->disarm_kill_switch = sbufReadU8(src);
-            break;
-
-        case MSP_SET_LOOP_TIME:
-            imuConfig()->looptime = sbufReadU16(src);
             break;
 
         case MSP_SET_PID_CONTROLLER:
