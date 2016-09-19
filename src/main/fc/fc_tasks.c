@@ -79,6 +79,13 @@ cfTask_t cfTasks[] = {
         .staticPriority = TASK_PRIORITY_LOW,
     },
 
+    [TASK_BATTERY] = {
+        .taskName = "BATTERY",
+        .taskFunc = taskUpdateBattery,
+        .desiredPeriod = 1000000 / 50,          // 50 Hz, every 20 ms
+        .staticPriority = TASK_PRIORITY_MEDIUM,
+    },
+
 #ifdef BEEPER
     [TASK_BEEPER] = {
         .taskName = "BEEPER",
@@ -87,13 +94,6 @@ cfTask_t cfTasks[] = {
         .staticPriority = TASK_PRIORITY_MEDIUM,
     },
 #endif
-
-    [TASK_BATTERY] = {
-        .taskName = "BATTERY",
-        .taskFunc = taskUpdateBattery,
-        .desiredPeriod = 1000000 / 50,          // 50 Hz, every 20 ms
-        .staticPriority = TASK_PRIORITY_MEDIUM,
-    },
 
 #ifdef GPS
     [TASK_GPS] = {
