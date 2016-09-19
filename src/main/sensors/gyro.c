@@ -64,13 +64,9 @@ static pt1Filter_t gyroFilterPt1[XYZ_AXIS_COUNT];
 
 PG_REGISTER_WITH_RESET_TEMPLATE(gyroConfig_t, gyroConfig, PG_GYRO_CONFIG, 0);
 
-#define GYRO_LPF_256HZ 0
-#define GYRO_LPF_188HZ 1
-#define GYRO_LPF_98HZ  2
-#define GYRO_LPF_42HZ  3
-
 PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
-    .gyro_lpf = GYRO_LPF_188HZ, // supported by all gyro drivers now. In case of ST gyro, will default to 32Hz instead
+    // In case of ST gyro, will default to 32Hz instead
+    .gyro_lpf = GYRO_LPF_256HZ,
 
     .gyro_soft_type = FILTER_PT1,
 
