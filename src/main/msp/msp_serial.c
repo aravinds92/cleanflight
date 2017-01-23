@@ -184,7 +184,8 @@ STATIC_UNIT_TESTED void mspSerialProcessReceivedCommand(mspPort_t *msp)
     int status = mspProcessCommand(&command, reply);
 
     if (status) {
-        printf("Command code: %d\nWriting to PC\n",command.cmd);
+        //printf("Command code: %d\nWriting to PC\n",command.cmd);
+        //printf("Command code: %d\n",command.cmd);
         // reply should be sent back
         sbufSwitchToReader(&reply->buf, outBufHead); // change streambuf direction
         mspSerialEncode(msp, reply);
@@ -214,7 +215,7 @@ static void mspSerialProcessReceivedReply(mspPort_t *msp)
 
 static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
 {
-    printf("char:%c\tstate:%d\n",c,msp->c_state);
+    //printf("char:%c\tstate:%d\n",c,msp->c_state);
     switch(msp->c_state) {
         default:                 // be conservative with unexpected state
         case IDLE:
@@ -251,7 +252,6 @@ static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
             }
             break;
         case HEADER_SIZE:
-            printf("Size:%d\n",c);        
             if (c > MSP_PORT_INBUF_SIZE) {
                 msp->c_state = IDLE;
             } else {
@@ -261,7 +261,6 @@ static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
             }
             break;
         case HEADER_CMD:
-            printf("command:%d\n",c);
             msp->cmdMSP = c;
             msp->c_state = HEADER_DATA;
             break;
