@@ -495,7 +495,6 @@ static void serializeDataflashReadReply(mspPacket_t *reply, uint32_t address, in
 // return positive for ACK, negative on error, zero for no reply
 int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 {
-    //printf("Inside command handler\n");
     sbuf_t *dst = &reply->buf;
     sbuf_t *src = &cmd->buf;
 
@@ -550,7 +549,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             break;
 
         case MSP_STATUS:
-            printf("MSP_STATUS\n");
+            //printf("MSP_STATUS\n");
             sbufWriteU16(dst, cycleTime);
 #ifdef USE_I2C
             sbufWriteU16(dst, i2cGetErrorCounter());
@@ -577,7 +576,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
         }
 
         case MSP_DATAFLASH_SUMMARY:
-            printf("MSP_DATAFLASH_SUMMARY\n");
+            //printf("MSP_DATAFLASH_SUMMARY\n");
             serializeDataflashSummaryReply(reply);
             break;
 
@@ -595,7 +594,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
 
         case MSP_BATTERY_CONFIG:
-            printf("MSP_BATTERY_CONFIG\n");
+            //printf("MSP_BATTERY_CONFIG\n");
             /*sbufWriteU8(dst, batteryConfig()->vbatmincellvoltage);
             sbufWriteU8(dst, batteryConfig()->vbatmaxcellvoltage);
             sbufWriteU8(dst, batteryConfig()->vbatwarningcellvoltage);
@@ -604,20 +603,20 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             break;
 
         case MSP_ACC_TRIM:
-            printf("MSP_ACC_TRIM\n");
-            /*sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.pitch);
-            sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.roll);*/
+            //printf("MSP_ACC_TRIM\n");
+            sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.pitch);
+            sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.roll);
             break;
 
 
         case MSP_BOXNAMES:
-            printf("MSP_BOXNAMES\n");
+            //printf("MSP_BOXNAMES\n");
             serializeBoxNamesReply(reply);
             break;
 
 
         default:
-            printf("Unknown\n");
+            //printf("Unknown\n");
             break;
 
 

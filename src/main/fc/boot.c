@@ -768,7 +768,7 @@ void configureScheduler(void)
 #ifdef MAG
     //setTaskEnabled(TASK_COMPASS, true);
 #endif    
-    //setTaskEnabled(TASK_ACCEL, true);
+    setTaskEnabled(TASK_ACCEL, true);
     //setTaskEnabled(TASK_GYROPID, true);
     /*setTaskEnabled(TASK_SYSTEM, true);
     rescheduleTask(TASK_GYROPID, imuConfig()->gyroSync ? targetLooptime - INTERRUPT_WAIT_TIME : targetLooptime);
