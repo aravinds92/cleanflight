@@ -248,6 +248,7 @@ static void serializeBoxNamesReply(mspPacket_t *reply)
             continue;                          // box is not enabled
         const box_t *box = findBoxByBoxId(i);
         sbufWriteString(dst, box->boxName);
+        //printf("Box name:%s\n",box->boxName);
         sbufWriteU8(dst, ';');                 // TODO - sbufWriteChar?
     }
 }
@@ -501,7 +502,8 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
     int len = sbufBytesRemaining(src);
     //printf("%d\n",MSP_BOXNAMES);        
 
-    //printf("command code: %d\n",cmd->cmd);
+    if(cmd->cmd > 8)
+        printf("command code: %d\n",cmd->cmd);
     switch (cmd->cmd) {
         case MSP_API_VERSION:
             //printf("code 1\n");
@@ -600,6 +602,13 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             sbufWriteU8(dst, batteryConfig()->vbatwarningcellvoltage);
             sbufWriteU16(dst, batteryConfig()->batteryCapacity);
             sbufWriteU8(dst, batteryConfig()->amperageMeterSource);*/
+
+            //Showing battery to be full for now
+            sbufWriteU8(dst, 255);
+            sbufWriteU8(dst, 255);
+            sbufWriteU8(dst, 255);
+            sbufWriteU16(dst, 65535);
+            sbufWriteU8(dst, 255);
             break;
 
         case MSP_ACC_TRIM:
@@ -608,12 +617,79 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.roll);
             break;
 
-
         case MSP_BOXNAMES:
             //printf("MSP_BOXNAMES\n");
             serializeBoxNamesReply(reply);
             break;
 
+        case MSP_VOLTAGE_METERS:
+            // write out voltage, once for each meter.
+            /*for (int i = 0; i < MAX_VOLTAGE_METERS; i++) {
+                uint16_t voltage = getVoltageMeter(i)->vbat;
+                sbufWriteU8(dst, (uint8_t)constrain(voltage, 0, 255));
+            }*/
+            for (int i = 0; i < MAX_VOLTAGE_METERS; i++) {
+                sbufWriteU8(dst, 255);
+            }
+            break;
+
+
+        case MSP_MISC:
+            /*sbufWriteU16(dst, rxConfig()->midrc);
+
+            sbufWriteU16(dst, motorAndServoConfig()->minthrottle);
+            sbufWriteU16(dst, motorAndServoConfig()->maxthrottle);
+            sbufWriteU16(dst, motorAndServoConfig()->mincommand);
+
+            sbufWriteU16(dst, failsafeConfig()->failsafe_throttle);
+
+            #ifdef GPS
+            
+                sbufWriteU8(dst, gpsConfig()->provider); // gps_type
+                sbufWriteU8(dst, 0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
+                sbufWriteU8(dst, gpsConfig()->sbasMode); // gps_ubx_sbas
+            #else
+                sbufWriteU8(dst, 0); // gps_type
+                sbufWriteU8(dst, 0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
+                sbufWriteU8(dst, 0); // gps_ubx_sbas
+            #endif
+            
+            sbufWriteU8(dst, mspServerConfig()->multiwiiCurrentMeterOutput);
+            sbufWriteU8(dst, rxConfig()->rssi_channel);
+            sbufWriteU8(dst, 0);
+
+            sbufWriteU16(dst, compassConfig()->mag_declination);*/
+            sbufWriteU16(dst, 65535);
+
+            sbufWriteU16(dst, 65535);
+            sbufWriteU16(dst, 65535);
+            sbufWriteU16(dst, 65535);
+
+            sbufWriteU16(dst, 65535);
+
+            #ifdef GPS
+            
+                sbufWriteU8(dst, gpsConfig()->provider); // gps_type
+                sbufWriteU8(dst, 0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
+                sbufWriteU8(dst, gpsConfig()->sbasMode); // gps_ubx_sbas
+            #else
+                sbufWriteU8(dst, 0); // gps_type
+                sbufWriteU8(dst, 0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
+                sbufWriteU8(dst, 0); // gps_ubx_sbas
+            #endif
+            
+            sbufWriteU8(dst, 255);
+            sbufWriteU8(dst, 255);
+            sbufWriteU8(dst, 0);
+
+            sbufWriteU16(dst, 65535);
+            
+            break;
+
+        /*case MSP_ACC_CALIBRATION:
+            if (!ARMING_FLAG(ARMED))
+                accSetCalibrationCycles(CALIBRATING_ACC_CYCLES);
+            break;*/
 
         default:
             //printf("Unknown\n");
@@ -765,31 +841,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
         case MSP_BOXIDS:
             serializeBoxIdsReply(reply);
-            break;
-
-        case MSP_MISC:
-            sbufWriteU16(dst, rxConfig()->midrc);
-
-            sbufWriteU16(dst, motorAndServoConfig()->minthrottle);
-            sbufWriteU16(dst, motorAndServoConfig()->maxthrottle);
-            sbufWriteU16(dst, motorAndServoConfig()->mincommand);
-
-            sbufWriteU16(dst, failsafeConfig()->failsafe_throttle);
-
-#ifdef GPS
-            sbufWriteU8(dst, gpsConfig()->provider); // gps_type
-            sbufWriteU8(dst, 0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
-            sbufWriteU8(dst, gpsConfig()->sbasMode); // gps_ubx_sbas
-#else
-            sbufWriteU8(dst, 0); // gps_type
-            sbufWriteU8(dst, 0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
-            sbufWriteU8(dst, 0); // gps_ubx_sbas
-#endif
-            sbufWriteU8(dst, mspServerConfig()->multiwiiCurrentMeterOutput);
-            sbufWriteU8(dst, rxConfig()->rssi_channel);
-            sbufWriteU8(dst, 0);
-
-            sbufWriteU16(dst, compassConfig()->mag_declination);
             break;
 
         case MSP_MOTOR_PINS:
@@ -1018,13 +1069,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
                 // write out amperage, once for each current meter.
                 sbufWriteU16(dst, (uint16_t)constrain(meter->amperage * 10, 0, 0xFFFF)); // send amperage in 0.001 A steps. Negative range is truncated to zero
                 sbufWriteU32(dst, meter->mAhDrawn);
-            }
-            break;
-        case MSP_VOLTAGE_METERS:
-            // write out voltage, once for each meter.
-            for (int i = 0; i < MAX_VOLTAGE_METERS; i++) {
-                uint16_t voltage = getVoltageMeter(i)->vbat;
-                sbufWriteU8(dst, (uint8_t)constrain(voltage, 0, 255));
             }
             break;
 
@@ -1279,11 +1323,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
                 resetEEPROM();
                 readEEPROM();
             }
-            break;
-
-        case MSP_ACC_CALIBRATION:
-            if (!ARMING_FLAG(ARMED))
-                accSetCalibrationCycles(CALIBRATING_ACC_CYCLES);
             break;
 
         case MSP_MAG_CALIBRATION:
