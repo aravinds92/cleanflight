@@ -151,6 +151,7 @@ void mspSerialEncode(mspPort_t *msp, mspPacket_t *packet)
     if(len > 0) {
         serialWriteBuf(msp->port, sbufPtr(&packet->buf), len);
         csum = mspSerialChecksumBuf(csum, sbufPtr(&packet->buf), len);
+        //printf("checksum:%d\n",csum);
     }
     serialWrite(msp->port, csum);
     serialEndWrite(msp->port);

@@ -691,6 +691,44 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
                 accSetCalibrationCycles(CALIBRATING_ACC_CYCLES);
             break;*/
 
+        case MSP_ATTITUDE:
+            sbufWriteU16(dst, attitude.values.roll);
+            sbufWriteU16(dst, attitude.values.pitch);
+            sbufWriteU16(dst, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
+            break;
+
+
+        case MSP_ANALOG: {
+            /*amperageMeter_t *amperageMeter = getAmperageMeter(batteryConfig()->amperageMeterSource);
+
+            sbufWriteU8(dst, (uint8_t)constrain(vbat, 0, 255));
+            sbufWriteU16(dst, (uint16_t)constrain(amperageMeter->mAhDrawn, 0, 0xFFFF)); // milliamp hours drawn from battery
+            sbufWriteU16(dst, rssi);
+
+            if (mspServerConfig()->multiwiiCurrentMeterOutput) {
+                sbufWriteU16(dst, (uint16_t)constrain(amperageMeter->amperage * 10, 0, 0xFFFF)); // send amperage in 0.001 A steps. Negative range is truncated to zero
+            } else {
+                sbufWriteU16(dst, (int16_t)constrain(amperageMeter->amperage, -0x8000, 0x7FFF)); // send amperage in 0.01 A steps, range is -320A to 320A
+            }
+            break;*/
+
+            sbufWriteU8(dst, 0);
+            sbufWriteU16(dst, 65535); // milliamp hours drawn from battery
+            sbufWriteU16(dst, 65535);
+
+            sbufWriteU16(dst, 65535); // send amperage in 0.001 A steps. Negative range is truncated to zero
+            
+            break;
+        }
+
+        case MSP_RESET_CONF:
+            //EEPROM not used here
+            /*if (!ARMING_FLAG(ARMED)) {
+                resetEEPROM();
+                readEEPROM();
+            }*/
+            break;
+
         default:
             //printf("Unknown\n");
             break;
@@ -739,12 +777,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
                 sbufWriteU16(dst, rcData[i]);
             break;
 
-        case MSP_ATTITUDE:
-            sbufWriteU16(dst, attitude.values.roll);
-            sbufWriteU16(dst, attitude.values.pitch);
-            sbufWriteU16(dst, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
-            break;
-
         case MSP_ALTITUDE:
 #if defined(BARO) || defined(SONAR)
             sbufWriteU32(dst, altitudeHoldGetEstimatedAltitude());
@@ -763,20 +795,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 #endif
             break;
 
-        case MSP_ANALOG: {
-            amperageMeter_t *amperageMeter = getAmperageMeter(batteryConfig()->amperageMeterSource);
-
-            sbufWriteU8(dst, (uint8_t)constrain(vbat, 0, 255));
-            sbufWriteU16(dst, (uint16_t)constrain(amperageMeter->mAhDrawn, 0, 0xFFFF)); // milliamp hours drawn from battery
-            sbufWriteU16(dst, rssi);
-
-            if (mspServerConfig()->multiwiiCurrentMeterOutput) {
-                sbufWriteU16(dst, (uint16_t)constrain(amperageMeter->amperage * 10, 0, 0xFFFF)); // send amperage in 0.001 A steps. Negative range is truncated to zero
-            } else {
-                sbufWriteU16(dst, (int16_t)constrain(amperageMeter->amperage, -0x8000, 0x7FFF)); // send amperage in 0.01 A steps, range is -320A to 320A
-            }
-            break;
-        }
 
         case MSP_ARMING_CONFIG:
             sbufWriteU8(dst, armingConfig()->auto_disarm_delay);
@@ -1316,13 +1334,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             sensorAlignmentConfig()->gyro_align = sbufReadU8(src);
             sensorAlignmentConfig()->acc_align = sbufReadU8(src);
             sensorAlignmentConfig()->mag_align = sbufReadU8(src);
-            break;
-
-        case MSP_RESET_CONF:
-            if (!ARMING_FLAG(ARMED)) {
-                resetEEPROM();
-                readEEPROM();
-            }
             break;
 
         case MSP_MAG_CALIBRATION:
