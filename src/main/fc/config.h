@@ -45,6 +45,8 @@ typedef enum {
     FEATURE_TRANSPONDER = 1 << 21,
 } features_e;
 
+void activateConfig(void);  //was declared static
+
 void handleOneshotFeatureChangeOnRestart(void);
 
 void initEEPROM(void);

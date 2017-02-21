@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "common/maths.h"
 
@@ -77,6 +79,8 @@ static bool isAccelUpdatedAtLeastOnce = false;
 
 static imuRuntimeConfig_t *imuRuntimeConfig;
 static accDeadband_t *accDeadband;
+
+bool runtimeConfig_initialized = false;
 
 PG_REGISTER_WITH_RESET_TEMPLATE(imuConfig_t, imuConfig, PG_IMU_CONFIG, 0);
 PG_REGISTER_PROFILE_WITH_RESET_TEMPLATE(throttleCorrectionConfig_t, throttleCorrectionConfig, PG_THROTTLE_CORRECTION_CONFIG, 0);
@@ -141,14 +145,20 @@ void imuConfigure(
     throttleAngleScale = calculateThrottleAngleScale(throttle_correction_angle);
 }
 
-/*void imuInit(void)
+void imuInit(void)
 {
+    if(!runtimeConfig_initialized)
+    {
+        imuRuntimeConfig = (imuRuntimeConfig_t*)malloc(sizeof(imuRuntimeConfig_t));
+        throttleCorrectionConfig_ProfileCurrent = (throttleCorrectionConfig_t*)malloc(sizeof(throttleCorrectionConfig_t));
+        runtimeConfig_initialized = true;
+    }
     smallAngleCosZ = cos_approx(degreesToRadians(imuRuntimeConfig->small_angle));
     gyroScale = gyro.scale * (M_PIf / 180.0f);  // gyro output scaled to rad per second
     accVelScale = 9.80665f / acc.acc_1G / 10000.0f;
 
     imuComputeRotationMatrix();
-}*/
+}
 
 float calculateThrottleAngleScale(uint16_t throttle_correction_angle)
 {
@@ -391,11 +401,15 @@ static bool imuIsAccelerometerHealthy(void)
     for (axis = 0; axis < 3; axis++) {
         accMagnitude += (int32_t)accSmooth[axis] * accSmooth[axis];
     }
-
-    accMagnitude = accMagnitude * 100 / (sq((int32_t)acc.acc_1G));
+    if(acc.acc_1G != 0)
+    {
+        accMagnitude = accMagnitude * 100 / (sq((int32_t)acc.acc_1G));
+        return (81 < accMagnitude) && (accMagnitude < 121);
+    }
+    else
+        return 1;
 
     // Accept accel readings only in range 0.90g - 1.10g
-    return (81 < accMagnitude) && (accMagnitude < 121);
 }
 
 #ifdef MAG
@@ -407,8 +421,6 @@ static bool isMagnetometerHealthy(void)
 
 static void imuCalculateEstimatedAttitude(void)
 {
-    return;
-    /*
     static pt1Filter_t accLPFState[3];
     static uint32_t previousIMUUpdateTime;
     float rawYawError = 0;
@@ -455,12 +467,14 @@ static void imuCalculateEstimatedAttitude(void)
 
     imuUpdateEulerAngles();
 
-    imuCalculateAcceleration(deltaT); // rotate acc vector into earth frame*/
+    imuCalculateAcceleration(deltaT); // rotate acc vector into earth frame
+    return;
 }
 
 void imuUpdateAccelerometer(rollAndPitchTrims_t *accelerometerTrims)
 {
         updateAccelerationReadings(accelerometerTrims);
+        printf("acc:%d\t%d\n",accelerometerConfig()->accelerometerTrims.values.pitch,accelerometerConfig()->accelerometerTrims.values.roll);
         isAccelUpdatedAtLeastOnce = true;
 }
 
@@ -470,6 +484,7 @@ void imuUpdateGyroAndAttitude(void)
 
     if (sensors(SENSOR_ACC) && isAccelUpdatedAtLeastOnce) {
         imuCalculateEstimatedAttitude();
+        //printf("roll:%d\tpitch:%d\tyaw:%d\n",attitude.values.roll, attitude.values.pitch, attitude.values.yaw);
     } else {
         accADC[X] = 0;
         accADC[Y] = 0;

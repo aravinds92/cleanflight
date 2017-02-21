@@ -19,7 +19,7 @@
 
 static uint32_t enabledSensors = 0;
 
-bool rcModeIsActive(boxId_e modeId)
+/*bool rcModeIsActive(boxId_e modeId)
 {
     return 0 & (1 << modeId);
-}
+}*/

@@ -75,7 +75,7 @@ sensor_align_e accAlign = 0;
 
 uint16_t calibratingA = 0;      // the calibration is done is the main loop. Calibrating decreases at each cycle down to 0, then we enter in a normal mode.
 
-bool initialized = false;
+bool acc_initialized = false;
 
 extern uint16_t InflightcalibratingA;
 extern bool AccInflightCalibrationArmed;
@@ -209,11 +209,11 @@ static void convertRawACCADCReadingsToInternalType(int16_t *accADCRaw)
 
 void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 {
-    if(!initialized)
+    if(!acc_initialized)
     {
         accelerationTrims = (flightDynamicsTrims_t *)malloc(sizeof(flightDynamicsTrims_t));
         accelerometerConfig_ProfileCurrent = (accelerometerConfig_t*)malloc(sizeof(accelerometerConfig_t));
-        initialized = true;
+        acc_initialized = true;
     }
     
     int16_t accADCRaw[XYZ_AXIS_COUNT];

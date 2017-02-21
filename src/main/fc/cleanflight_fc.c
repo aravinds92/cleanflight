@@ -135,7 +135,7 @@ extern gyro_t gyro;
 
 static bool isRXDataNew;
 
-bool gyro_initialized = false;
+//bool gyro_initialized = false;
 static pt1Filter_t filteredCycleTimeState;
 uint16_t filteredCycleTime;
 int i=0;
@@ -179,13 +179,16 @@ void taskUpdateAccelerometer(void)
 
 void taskMainPidLoopChecker(void) 
 {
+    imuUpdateGyroAndAttitude();
     // getTaskDeltaTime() returns delta time freezed at the moment of entering the scheduler. currentTime is freezed at the very same point.
     // To make busy-waiting timeout work we need to account for time spent within busy-waiting loop
-    if(!gyro_initialized)
+    /*if(!gyro_initialized)
     {
         imuConfig()->gyroSync = 1;
         gyro_initialized = true;
     }
+
+
     uint32_t currentDeltaTime = getTaskDeltaTime(TASK_SELF);
 
     if (imuConfig()->gyroSync) {
@@ -194,7 +197,7 @@ void taskMainPidLoopChecker(void)
                 break;
             }
         }
-    }
+    }*/
 
     //taskMainPidLoop();
 }

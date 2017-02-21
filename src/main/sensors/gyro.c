@@ -56,6 +56,8 @@ static int32_t gyroZero[XYZ_AXIS_COUNT] = { 0, 0, 0 };
 static biquad_t gyroFilterState[3];
 static bool gyroFilterStateIsSet;
 
+bool gyro_initialized = false;
+
 PG_REGISTER_WITH_RESET_TEMPLATE(gyroConfig_t, gyroConfig, PG_GYRO_CONFIG, 0);
 
 PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
@@ -144,6 +146,11 @@ static void applyGyroZero(void)
 void gyroUpdate(void)
 {
     // range: +/- 8192; +/- 2000 deg/sec
+    if(!gyro_initialized)
+    {
+        //malloc structs
+        gyro_initialized = true;
+    }
     if (!gyro.read(gyroADCRaw)) {
         return;
     }

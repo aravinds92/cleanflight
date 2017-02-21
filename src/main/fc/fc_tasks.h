@@ -24,10 +24,9 @@ typedef enum {
     /* Actual tasks */
     TASK_SYSTEM = 0,
     TASK_SERIAL,
-#ifdef MAG
-    TASK_COMPASS,
-#endif
-    TEST,
+//#ifdef MAG
+//    TASK_COMPASS,
+//#endif
     TASK_ACCEL,
     TASK_GYROPID,
 #ifdef BEEPER

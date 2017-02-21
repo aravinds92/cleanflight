@@ -284,8 +284,12 @@ FC = 		\
 			src/main/fc/fc_tasks.c \
 			src/main/fc/msp_server_fc.c \
 			src/main/fc/cleanflight_fc.c \
-			src/main/fc/runtime_config.c
-			#src/main/fc/config.c
+			src/main/fc/runtime_config.c \
+			src/main/fc/config.c \
+			src/main/fc/rate_profile.c \
+			src/main/fc/rc_adjustments.c \
+			src/main/fc/rc_controls.c \
+			src/main/fc/rc_curves.c
 
 IO = 		\
 			src/main/io/io_serial.c \

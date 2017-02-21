@@ -73,6 +73,8 @@ static bool isUsingSticksToArm = true;
 
 int16_t rcCommand[4];           // interval [1000;2000] for THROTTLE and [-500;+500] for ROLL/PITCH/YAW
 
+extern int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+
 STATIC_UNIT_TESTED uint32_t rcModeActivationMask; // one bit per mode defined in boxId_e
 
 PG_RESET_TEMPLATE(rcControlsConfig_t, rcControlsConfig,
@@ -91,7 +93,7 @@ PG_RESET_TEMPLATE(armingConfig_t, armingConfig,
 );
 
 
-bool isUsingSticksForArming(void)
+/*bool isUsingSticksForArming(void)
 {
     return isUsingSticksToArm;
 }
@@ -307,20 +309,6 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
 
 }
 
-bool rcModeIsActivationConditionPresent(modeActivationCondition_t *modeActivationConditions, boxId_e modeId)
-{
-    uint8_t index;
-
-    for (index = 0; index < MAX_MODE_ACTIVATION_CONDITION_COUNT; index++) {
-        modeActivationCondition_t *modeActivationCondition = &modeActivationConditions[index];
-
-        if (modeActivationCondition->modeId == modeId && IS_RANGE_USABLE(&modeActivationCondition->range)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 bool isRangeActive(uint8_t auxChannelIndex, channelRange_t *range)
 {
     if (!IS_RANGE_USABLE(range)) {
@@ -330,11 +318,6 @@ bool isRangeActive(uint8_t auxChannelIndex, channelRange_t *range)
     uint16_t channelValue = constrain(rcData[auxChannelIndex + NON_AUX_CHANNEL_COUNT], CHANNEL_RANGE_MIN, CHANNEL_RANGE_MAX - 1);
     return (channelValue >= MODE_STEP_TO_CHANNEL_VALUE(range->startStep)
             && channelValue < MODE_STEP_TO_CHANNEL_VALUE(range->endStep));
-}
-
-bool rcModeIsActive(boxId_e modeId)
-{
-    return rcModeActivationMask & (1 << modeId);
 }
 
 void rcModeUpdateActivated(modeActivationCondition_t *modeActivationConditions)
@@ -354,10 +337,30 @@ void rcModeUpdateActivated(modeActivationCondition_t *modeActivationConditions)
 int32_t getRcStickDeflection(int32_t axis, uint16_t midrc)
 {
     return MIN(ABS(rcData[axis] - midrc), 500);
-}
+}*/
 
 void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions)
 {
     isUsingSticksToArm = !rcModeIsActivationConditionPresent(modeActivationConditions, BOXARM);
+}
+
+bool rcModeIsActivationConditionPresent(modeActivationCondition_t *modeActivationConditions, boxId_e modeId)
+{
+    uint8_t index;
+
+    for (index = 0; index < MAX_MODE_ACTIVATION_CONDITION_COUNT; index++) {
+        modeActivationCondition_t *modeActivationCondition = &modeActivationConditions[index];
+
+        if (modeActivationCondition->modeId == modeId && IS_RANGE_USABLE(&modeActivationCondition->range)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool rcModeIsActive(boxId_e modeId)
+{
+    return rcModeActivationMask & (1 << modeId);
 }
 

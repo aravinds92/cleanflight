@@ -502,7 +502,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
     int len = sbufBytesRemaining(src);
     //printf("%d\n",MSP_BOXNAMES);        
 
-    if(cmd->cmd > 8)
+    if(cmd->cmd > 8 && cmd->cmd != 160)
         printf("command code: %d\n",cmd->cmd);
     switch (cmd->cmd) {
         case MSP_API_VERSION:
@@ -588,9 +588,9 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
 
         case MSP_UID:
-            sbufWriteU32(dst, U_ID_0);
-            sbufWriteU32(dst, U_ID_1);
-            sbufWriteU32(dst, U_ID_2);
+            sbufWriteU32(dst, 0);
+            sbufWriteU32(dst, 0);
+            sbufWriteU32(dst, 0);
             break;
 
 
@@ -692,7 +692,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             break;*/
 
         case MSP_ATTITUDE:
-            sbufWriteU16(dst, attitude.values.roll);
+            sbufWriteU16(dst, attitude.values.roll);                            
             sbufWriteU16(dst, attitude.values.pitch);
             sbufWriteU16(dst, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
             break;

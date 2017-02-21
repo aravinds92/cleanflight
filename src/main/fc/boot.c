@@ -50,6 +50,8 @@
 
 #include "sensors/sensors.h"
 
+#include "flight/imu.h"
+
 /*#include <platform.h>
 
 #include "build/build_config.h"
@@ -112,7 +114,6 @@
 #include "blackbox/blackbox.h"
 
 #include "flight/pid.h"
-#include "flight/imu.h"
 #include "flight/mixer.h"
 #include "flight/servos.h"
 #include "flight/failsafe.h"
@@ -589,8 +590,6 @@ void init(void)
     mixerInitialiseServoFiltering(targetLooptime);
 #endif
     //TBD
-    imuInit();              //Initialize IMU angle input based on the imu init struct
-                            //Can be replaced with the code for reading from the sparkfun imu
 
 
     //MSP serial starts in mspSerialProcess of cleanflight_fc.c in src/main/fc.
@@ -769,7 +768,7 @@ void configureScheduler(void)
     //setTaskEnabled(TASK_COMPASS, true);
 #endif    
     setTaskEnabled(TASK_ACCEL, true);
-    //setTaskEnabled(TASK_GYROPID, true);
+    setTaskEnabled(TASK_GYROPID, true);
     /*setTaskEnabled(TASK_SYSTEM, true);
     rescheduleTask(TASK_GYROPID, imuConfig()->gyroSync ? targetLooptime - INTERRUPT_WAIT_TIME : targetLooptime);
     setTaskEnabled(TASK_SERIAL, true);
@@ -818,6 +817,9 @@ void init(void)
     serialInit(true);            //Initialize soft_serial ports based on USE_SOFTSERIAL1 & USE_SOFTSERIAL2. 
     mspInit();              //initialize values based on enabled features
     mspSerialInit();        //allocate serial ports for each of the msp ports
+    activateConfig();
+    imuInit();              //Initialize IMU angle input based on the imu init struct
+                            //Can be replaced with the code for reading from the sparkfun imu
 
     /*char buffer[5];
     systemInit();   

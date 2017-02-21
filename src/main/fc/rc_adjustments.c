@@ -56,7 +56,9 @@ uint8_t adjustmentStateMask = 0;
 
 #define IS_ADJUSTMENT_FUNCTION_BUSY(adjustmentIndex) (adjustmentStateMask & (1 << adjustmentIndex))
 
-void blackboxLogInflightAdjustmentEvent(adjustmentFunction_e adjustmentFunction, int32_t newValue)
+adjustmentState_t adjustmentStates[MAX_SIMULTANEOUS_ADJUSTMENT_COUNT];
+
+/*void blackboxLogInflightAdjustmentEvent(adjustmentFunction_e adjustmentFunction, int32_t newValue)
 {
 #ifndef BLACKBOX
     UNUSED(adjustmentFunction);
@@ -87,8 +89,6 @@ void blackboxLogInflightAdjustmentEventFloat(adjustmentFunction_e adjustmentFunc
     }
 #endif
 }
-
-adjustmentState_t adjustmentStates[MAX_SIMULTANEOUS_ADJUSTMENT_COUNT];
 
 void configureAdjustmentState(adjustmentRange_t *adjustmentRange)
 {
@@ -344,7 +344,7 @@ void updateAdjustmentStates(adjustmentRange_t *adjustmentRanges)
             configureAdjustmentState(adjustmentRange);
         }
     }
-}
+}*/
 
 void resetAdjustmentStates(void)
 {

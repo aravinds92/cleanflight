@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include "common/axis.h"
+#include "sensors/acceleration.h"
+#include "common/maths.h"
 
 extern int16_t throttleAngleCorrection;
 extern uint32_t accTimeSum;

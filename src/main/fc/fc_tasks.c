@@ -65,15 +65,15 @@ cfTask_t cfTasks[] = {
     [TASK_ACCEL] = {
         .taskName = "ACCEL",
         .taskFunc = taskUpdateAccelerometer,
-        .desiredPeriod = TASK_PERIOD_HZ(1),                 //period of 1 us
+        .desiredPeriod = TASK_PERIOD_HZ(100),                 //period of 1 us
         .staticPriority = TASK_PRIORITY_MEDIUM,
     },
-/*    [TASK_GYROPID] = {
+    [TASK_GYROPID] = {
         .taskName = "GYRO/PID",
         .taskFunc = taskMainPidLoopChecker,
         .desiredPeriod = TASK_PERIOD_MS(1),                 //period of 1 ms
         .staticPriority = TASK_PRIORITY_REALTIME,
-    }*/
+    }
 };
 
 #if 0
