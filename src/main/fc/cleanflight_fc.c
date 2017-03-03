@@ -174,7 +174,7 @@ void taskUpdateCompass(void)
 
 void taskUpdateAccelerometer(void)
 {
-    imuUpdateAccelerometer(&accelerometerConfig()->accelerometerTrims);
+    imuUpdateAccelerometer(&(accelerometerConfig->accelerometerTrims));
 }
 
 void taskMainPidLoopChecker(void) 

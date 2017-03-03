@@ -344,20 +344,24 @@ void activateConfig(void)       //was declared static
     mixerUseConfigs(servoProfile()->servoConf);
 #endif
 
+
+    imuConfig->dcm_ki = 100;
+    imuConfig->dcm_kp = 10000;
+
     //recalculateMagneticDeclination();
 
     //printf("returned value:%lu\n",accelerometerConfig());
     static imuRuntimeConfig_t imuRuntimeConfig;
-    imuRuntimeConfig.dcm_kp = imuConfig()->dcm_kp / 10000.0f;
-    imuRuntimeConfig.dcm_ki = imuConfig()->dcm_ki / 10000.0f;
-    imuRuntimeConfig.acc_cut_hz = ((accelerometerConfig_t*)&accelerometerConfig)->acc_cut_hz;
-    imuRuntimeConfig.acc_unarmedcal = ((accelerometerConfig_t*)&accelerometerConfig)->acc_unarmedcal;
-    imuRuntimeConfig.small_angle = imuConfig()->small_angle;
+    imuRuntimeConfig.dcm_kp = imuConfig->dcm_kp / 10000.0f;
+    imuRuntimeConfig.dcm_ki = imuConfig->dcm_ki / 10000.0f;
+    imuRuntimeConfig.acc_cut_hz = accelerometerConfig->acc_cut_hz;
+    imuRuntimeConfig.acc_unarmedcal = accelerometerConfig->acc_unarmedcal;
+    imuRuntimeConfig.small_angle = imuConfig->small_angle;
 
     imuConfigure(
         &imuRuntimeConfig,
-        &(((accelerometerConfig_t*)&accelerometerConfig)->accDeadband),
-        ((accelerometerConfig_t*)&accelerometerConfig)->accz_lpf_cutoff,
-        ((throttleCorrectionConfig_t*)&throttleCorrectionConfig)->throttle_correction_angle
+        &(accelerometerConfig->accDeadband),
+        accelerometerConfig->accz_lpf_cutoff,
+        throttleCorrectionConfig->throttle_correction_angle
     );
 }

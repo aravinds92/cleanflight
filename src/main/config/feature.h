@@ -21,7 +21,7 @@ typedef struct featureConfig_s {
     uint32_t enabledFeatures;
 } featureConfig_t;
 
-PG_DECLARE(featureConfig_t, featureConfig);
+featureConfig_t* featureConfig;
 
 void latchActiveFeatures(void);
 bool featureConfigured(uint32_t mask);

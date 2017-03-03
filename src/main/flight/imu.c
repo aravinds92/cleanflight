@@ -62,7 +62,13 @@
 // omega_I. At larger spin rates the DCM PI controller can get 'dizzy'
 // which results in false gyro drift. See
 // http://gentlenav.googlecode.com/files/fastRotations.pdf
-#define SPIN_RATE_LIMIT 20
+#define SPIN_RATE_LIMIT 30
+
+#define GyroMeasError M_PIf * (40.0f / 180.0f)       // gyroscope measurement error in rads/s (shown as 3 deg/s)
+#define GyroMeasDrift M_PIf * (0.0f / 180.0f)      // gyroscope measurement drift in rad/s/s (shown as 0.0 deg/s/s)
+#define beta sqrt(3.0f / 4.0f) * GyroMeasError   // compute beta
+#define zeta sqrt(3.0f / 4.0f) * GyroMeasDrift   // compute zeta, the other free parameter in the Madgwick scheme usually set to a small or zero value
+
 
 int16_t accSmooth[XYZ_AXIS_COUNT];
 int32_t accSum[XYZ_AXIS_COUNT];
@@ -74,6 +80,12 @@ float accVelScale;
 float throttleAngleScale;
 float fc_acc;
 float smallAngleCosZ = 0;
+
+uint16_t lastUpdate = 0;    // used to calculate integration interval
+float deltat = 0.0f;        // integration interval for both filter schemes
+uint16_t now = 0;           // used to calculate integration interval
+
+
 
 static bool isAccelUpdatedAtLeastOnce = false;
 
@@ -100,6 +112,7 @@ PG_RESET_TEMPLATE(throttleCorrectionConfig_t, throttleCorrectionConfig,
 );
 
 STATIC_UNIT_TESTED float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;    // quaternion of sensor frame relative to earth frame
+float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
 static float rMat[3][3];
 
 attitudeEulerAngles_t attitude = { { 0, 0, 0 } };     // absolute angle inclination in multiple of 0.1 degree    180 deg = 1800
@@ -139,6 +152,11 @@ void imuConfigure(
     uint16_t throttle_correction_angle
 )
 {
+    if(!runtimeConfig_initialized)
+    {
+
+        runtimeConfig_initialized = true;
+    }
     imuRuntimeConfig = initialImuRuntimeConfig;
     accDeadband = initialAccDeadband;
     fc_acc = calculateAccZLowPassFilterRCTimeConstant(accz_lpf_cutoff);
@@ -147,12 +165,6 @@ void imuConfigure(
 
 void imuInit(void)
 {
-    if(!runtimeConfig_initialized)
-    {
-        imuRuntimeConfig = (imuRuntimeConfig_t*)malloc(sizeof(imuRuntimeConfig_t));
-        throttleCorrectionConfig_ProfileCurrent = (throttleCorrectionConfig_t*)malloc(sizeof(throttleCorrectionConfig_t));
-        runtimeConfig_initialized = true;
-    }
     smallAngleCosZ = cos_approx(degreesToRadians(imuRuntimeConfig->small_angle));
     gyroScale = gyro.scale * (M_PIf / 180.0f);  // gyro output scaled to rad per second
     accVelScale = 9.80665f / acc.acc_1G / 10000.0f;
@@ -369,6 +381,7 @@ static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
 STATIC_UNIT_TESTED void imuUpdateEulerAngles(void)
 {
     /* Compute pitch/roll angles */
+    int i,j;
     attitude.values.roll = lrintf(atan2_approx(rMat[2][1], rMat[2][2]) * (1800.0f / M_PIf));
     attitude.values.pitch = lrintf(((0.5f * M_PIf) - acos_approx(-rMat[2][0])) * (1800.0f / M_PIf));
     attitude.values.yaw = lrintf((-atan2_approx(rMat[1][0], rMat[0][0]) * (1800.0f / M_PIf) + magneticDeclination));
@@ -382,6 +395,15 @@ STATIC_UNIT_TESTED void imuUpdateEulerAngles(void)
     } else {
         DISABLE_STATE(SMALL_ANGLE);
     }
+    
+
+    /*for(i=0;i<3;i++)
+    {
+        for(j=0;j<3;j++)
+            printf("%f\t",rMat[i][j]);
+        printf("\n");
+    }
+    printf("\n");    */
 }
 
 bool imuIsAircraftArmable(uint8_t arming_angle)
@@ -419,7 +441,7 @@ static bool isMagnetometerHealthy(void)
 }
 #endif
 
-static void imuCalculateEstimatedAttitude(void)
+/*static void imuCalculateEstimatedAttitude(void)
 {
     static pt1Filter_t accLPFState[3];
     static uint32_t previousIMUUpdateTime;
@@ -458,9 +480,10 @@ static void imuCalculateEstimatedAttitude(void)
         useYaw = true;
     }
 #endif
+    //printf("gx:%f\tgy:%f\tgz:%f\n",gyroADC[X] * gyroScale, gyroADC[Y] * gyroScale, gyroADC[Z] * gyroScale);
 
     imuMahonyAHRSupdate(deltaT * 1e-6f,
-                        gyroADC[X] * gyroScale, gyroADC[Y] * gyroScale, gyroADC[Z] * gyroScale,
+                        calcGyro(imu,gyroADC[X]),calcGyro(imu,gyroADC[Y]),calcGyro(imu,gyroADC[Z]),
                         useAcc, accSmooth[X], accSmooth[Y], accSmooth[Z],
                         useMag, magADC[X], magADC[Y], magADC[Z],
                         useYaw, rawYawError);
@@ -469,22 +492,30 @@ static void imuCalculateEstimatedAttitude(void)
 
     imuCalculateAcceleration(deltaT); // rotate acc vector into earth frame
     return;
-}
+}*/
 
 void imuUpdateAccelerometer(rollAndPitchTrims_t *accelerometerTrims)
 {
+        //printf("%lu\n",accelerometerTrims);
         updateAccelerationReadings(accelerometerTrims);
-        printf("acc:%d\t%d\n",accelerometerConfig()->accelerometerTrims.values.pitch,accelerometerConfig()->accelerometerTrims.values.roll);
+        //printf("acc:%d\t%d\n",accelerometerConfig->accelerometerTrims.values.pitch,accelerometerConfig->accelerometerTrims.values.roll);
         isAccelUpdatedAtLeastOnce = true;
 }
 
 void imuUpdateGyroAndAttitude(void)
 {
     gyroUpdate();
+    
+    now = micros();
+    deltat = ((now - lastUpdate)/1000000.0f); // set integration time by time elapsed since last filter update
+    lastUpdate = now;
+
+
 
     if (sensors(SENSOR_ACC) && isAccelUpdatedAtLeastOnce) {
-        imuCalculateEstimatedAttitude();
-        //printf("roll:%d\tpitch:%d\tyaw:%d\n",attitude.values.roll, attitude.values.pitch, attitude.values.yaw);
+        //imuCalculateEstimatedAttitude();
+        calculateAttitude();
+        //printf("Attitude\t%d\t%d\t%d\n",attitude.values.roll, attitude.values.pitch, attitude.values.yaw);
     } else {
         accADC[X] = 0;
         accADC[Y] = 0;
@@ -511,4 +542,130 @@ int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value)
     if (angle > 900)
         angle = 900;
     return lrintf(throttle_correction_value * sin_approx(angle / (900.0f * M_PIf / 2.0f)));
+}
+
+void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
+{
+  float qa = q[0], qb = q[1], qc = q[2], qd = q[3];   // short name local variable for readability
+  float norm;
+  float hx, hy, _2bx, _2bz;
+  float s1, s2, s3, s4;
+  float qDot1, qDot2, qDot3, qDot4;
+
+  // Auxiliary variables to avoid repeated arithmetic
+  float _2q1mx;
+  float _2q1my;
+  float _2q1mz;
+  float _2q2mx;
+  float _4bx;
+  float _4bz;
+  float _2q1 = 2.0f * qa;
+  float _2q2 = 2.0f * qb;
+  float _2q3 = 2.0f * qc;
+  float _2q4 = 2.0f * qd;
+  float _2q1q3 = 2.0f * qa * qc;
+  float _2q3q4 = 2.0f * qc * qd;
+  float q1q1 = qa * qa;
+  float q1q2 = qa * qb;
+  float q1q3 = qa * qc;
+  float q1q4 = qa * qd;
+  float q2q2 = qb * qb;
+  float q2q3 = qb * qc;
+  float q2q4 = qb * qd;
+  float q3q3 = qc * qc;
+  float q3q4 = qc * qd;
+  float q4q4 = qd * qd;
+
+  // Normalise accelerometer measurement
+  norm = sqrt(ax * ax + ay * ay + az * az);
+  if (norm == 0.0f) return; // handle NaN
+  norm = 1.0f/norm;
+  ax *= norm;
+  ay *= norm;
+  az *= norm;
+
+  // Normalise magnetometer measurement
+  norm = sqrt(mx * mx + my * my + mz * mz);
+  if (norm == 0.0f) return; // handle NaN
+  norm = 1.0f/norm;
+  mx *= norm;
+  my *= norm;
+  mz *= norm;
+
+  // Reference direction of Earth's magnetic field
+  _2q1mx = 2.0f * qa * mx;
+  _2q1my = 2.0f * qa * my;
+  _2q1mz = 2.0f * qa * mz;
+  _2q2mx = 2.0f * qb * mx;
+  hx = mx * q1q1 - _2q1my * qd + _2q1mz * qc + mx * q2q2 + _2q2 * my * qc + _2q2 * mz * qd - mx * q3q3 - mx * q4q4;
+  hy = _2q1mx * qd + my * q1q1 - _2q1mz * qb + _2q2mx * qc - my * q2q2 + my * q3q3 + _2q3 * mz * qd - my * q4q4;
+  _2bx = sqrt(hx * hx + hy * hy);
+  _2bz = -_2q1mx * qc + _2q1my * qb + mz * q1q1 + _2q2mx * qd - mz * q2q2 + _2q3 * my * qd - mz * q3q3 + mz * q4q4;
+  _4bx = 2.0f * _2bx;
+  _4bz = 2.0f * _2bz;
+
+  // Gradient decent algorithm corrective step
+  s1 = -_2q3 * (2.0f * q2q4 - _2q1q3 - ax) + _2q2 * (2.0f * q1q2 + _2q3q4 - ay) - _2bz * qc * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (-_2bx * qd + _2bz * qb) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + _2bx * qc * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
+  s2 = _2q4 * (2.0f * q2q4 - _2q1q3 - ax) + _2q1 * (2.0f * q1q2 + _2q3q4 - ay) - 4.0f * qb * (1.0f - 2.0f * q2q2 - 2.0f * q3q3 - az) + _2bz * qd * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (_2bx * qc + _2bz * qa) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + (_2bx * qd - _4bz * qb) * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
+  s3 = -_2q1 * (2.0f * q2q4 - _2q1q3 - ax) + _2q4 * (2.0f * q1q2 + _2q3q4 - ay) - 4.0f * qc * (1.0f - 2.0f * q2q2 - 2.0f * q3q3 - az) + (-_4bx * qc - _2bz * qa) * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (_2bx * qb + _2bz * qd) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + (_2bx * qa - _4bz * qc) * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
+  s4 = _2q2 * (2.0f * q2q4 - _2q1q3 - ax) + _2q3 * (2.0f * q1q2 + _2q3q4 - ay) + (-_4bx * qd + _2bz * qb) * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (-_2bx * qa + _2bz * qc) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + _2bx * qb * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
+  norm = sqrt(s1 * s1 + s2 * s2 + s3 * s3 + s4 * s4);    // normalise step magnitude
+  norm = 1.0f/norm;
+  s1 *= norm;
+  s2 *= norm;
+  s3 *= norm;
+  s4 *= norm;
+
+  // Compute rate of change of quaternion
+  qDot1 = 0.5f * (-qb * gx - qc * gy - qd * gz) - beta * s1;
+  qDot2 = 0.5f * (qa * gx + qc * gz - qd * gy) - beta * s2;
+  qDot3 = 0.5f * (qa * gy - qb * gz + qd * gx) - beta * s3;
+  qDot4 = 0.5f * (qa * gz + qb * gy - qc * gx) - beta * s4;
+
+  // Integrate to yield quaternion
+  qa += qDot1 * deltat;
+  qb += qDot2 * deltat;
+  qc += qDot3 * deltat;
+  qd += qDot4 * deltat;
+  norm = sqrt(qa * qa + qb * qb + qc * qc + qd * qd);    // normalise quaternion
+  norm = 1.0f/norm;
+  q[0] = qa * norm;
+  q[1] = qb * norm;
+  q[2] = qc * norm;
+  q[3] = qd * norm;
+
+  q0 = q[0];
+  q1 = q[1];
+  q2 = q[2];
+  q3 = q[3];
+
+  imuComputeRotationMatrix();
+
+  imuUpdateEulerAngles();
+
+  imuCalculateAcceleration(deltat); // rotate acc vector into earth frame
+
+  //printf("attitude:%d\t%d\t%d\n",attitude.values.roll, attitude.values.pitch, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
+}
+
+
+
+void calculateAttitude(void)
+{
+    float ax, ay, az, gx, gy, gz, mx, my, mz; // variables to hold latest sensor data values    
+
+    ax = calcAccel(imu,imu->ax);   // Convert to g's
+    ay = calcAccel(imu,imu->ay);
+    az = calcAccel(imu,imu->az);
+
+    mx = calcMag(imu,imu->mx);     // Convert to Gauss
+    my = calcMag(imu,imu->my);
+    mz = calcMag(imu,imu->mz);
+
+    gx = calcGyro(imu,imu->gx);   // Convert to degrees per seconds
+    gy = calcGyro(imu,imu->gy);
+    gz = calcGyro(imu,imu->gz);
+
+    MadgwickQuaternionUpdate(ax, ay, az, gx*M_PIf/180.0f, gy*M_PIf/180.0f, gz*M_PIf/180.0f, mx, my, mz);
+
 }

@@ -613,8 +613,8 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
         case MSP_ACC_TRIM:
             //printf("MSP_ACC_TRIM\n");
-            sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.pitch);
-            sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.roll);
+            sbufWriteU16(dst, accelerometerConfig->accelerometerTrims.values.pitch);
+            sbufWriteU16(dst, accelerometerConfig->accelerometerTrims.values.roll);
             break;
 
         case MSP_BOXNAMES:
