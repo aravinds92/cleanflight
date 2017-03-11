@@ -15,11 +15,20 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <stdint.h>
 
-static uint32_t enabledSensors = 0;
+extern "C" {
+    #include "platform.h"
+    #include "drivers/system.h"
+}
 
-/*bool rcModeIsActive(boxId_e modeId)
+#include "unittest_macros.h"
+#include "gtest/gtest.h"
+
+void failureMode(uint8_t mode)
 {
-    return 0 & (1 << modeId);
-}*/
+    UNUSED(mode);
+    EXPECT_TRUE(false);
+}
+
+uint16_t cycleTime;

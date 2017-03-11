@@ -16,6 +16,7 @@
  */
 
 #pragma once
+#include "drivers/sensor.h"
 
 #define GYRO_LPF_256HZ      0
 #define GYRO_LPF_188HZ      1

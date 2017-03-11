@@ -478,3 +478,4 @@ void calcaRes();
 
 
 #endif // SFE_LSM9DS0_H //
+

@@ -31,6 +31,7 @@
 #include "drivers/serial.h"
 #include "drivers/gpio.h"
 #include "drivers/timer_setup.h"
+#include "drivers/gyro_sync.h"
 
 
 #include "fc/fc_tasks.h"
@@ -49,6 +50,10 @@
 #include "io/io_serial.h"
 
 #include "sensors/sensors.h"
+#include "sensors/acceleration.h"
+#include "sensors/gyro.h"
+
+#include "flight/imu.h"
 
 /*#include <platform.h>
 
@@ -100,7 +105,6 @@
 #include "sensors/sonar.h"
 #include "sensors/barometer.h"
 #include "sensors/compass.h"
-#include "sensors/acceleration.h"
 #include "sensors/gyro.h"
 #include "sensors/voltage.h"
 #include "sensors/amperage.h"
@@ -112,7 +116,6 @@
 #include "blackbox/blackbox.h"
 
 #include "flight/pid.h"
-#include "flight/imu.h"
 #include "flight/mixer.h"
 #include "flight/servos.h"
 #include "flight/failsafe.h"
@@ -574,7 +577,6 @@ void init(void)
     }
 #endif
     //TBD
-    gyroSetSampleRate(imuConfig()->looptime, gyroConfig()->gyro_lpf, imuConfig()->gyroSync, imuConfig()->gyroSyncDenominator);   // Set gyro sampling rate divider before initialization
 
     if (!sensorsAutodetect()) {
         // if gyro was not detected due to whatever reason, we give up now.
@@ -589,8 +591,6 @@ void init(void)
     mixerInitialiseServoFiltering(targetLooptime);
 #endif
     //TBD
-    imuInit();              //Initialize IMU angle input based on the imu init struct
-                            //Can be replaced with the code for reading from the sparkfun imu
 
 
     //MSP serial starts in mspSerialProcess of cleanflight_fc.c in src/main/fc.
@@ -766,10 +766,10 @@ void configureScheduler(void)
     setTaskEnabled(TASK_SYSTEM, true);
     setTaskEnabled(TASK_SERIAL, true);
 #ifdef MAG
-    //setTaskEnabled(TASK_COMPASS, true);
+    setTaskEnabled(TASK_COMPASS, true);
 #endif    
-    //setTaskEnabled(TASK_ACCEL, true);
-    //setTaskEnabled(TASK_GYROPID, true);
+    setTaskEnabled(TASK_ACCEL, true);
+    setTaskEnabled(TASK_GYROPID, true);
     /*setTaskEnabled(TASK_SYSTEM, true);
     rescheduleTask(TASK_GYROPID, imuConfig()->gyroSync ? targetLooptime - INTERRUPT_WAIT_TIME : targetLooptime);
     setTaskEnabled(TASK_SERIAL, true);
@@ -811,13 +811,45 @@ void configureScheduler(void)
 #endif*/
 }
 
+void malloc_structs(void)
+{
+    accelerometerConfig = (accelerometerConfig_t*)malloc(sizeof(accelerometerConfig_t));
+    memset(accelerometerConfig,0,sizeof(accelerometerConfig_t));
+    pgResetFn_accelerometerConfig(accelerometerConfig);       
+    
+    imuConfig = (imuConfig_t*)malloc(sizeof(imuConfig_t));
+    memset(imuConfig,0,sizeof(imuConfig_t));
+    imuConfig->looptime = 1000;
+
+    featureConfig = (featureConfig_t*)malloc(sizeof(featureConfig_t));
+    memset(featureConfig,0,sizeof(featureConfig_t));
+
+    throttleCorrectionConfig = (throttleCorrectionConfig_t*)malloc(sizeof(throttleCorrectionConfig_t));
+    memset(throttleCorrectionConfig,0,sizeof(throttleCorrectionConfig_t));
+
+    gyroConfig = (gyroConfig_t*)malloc(sizeof(gyroConfig_t));
+    memset(gyroConfig,0,sizeof(gyroConfig_t));
+    pgResetFn_gyroConfig();
+    gyroSetSampleRate(imuConfig->looptime, gyroConfig->gyro_lpf, imuConfig->gyroSync, imuConfig->gyroSyncDenominator);   // Set gyro sampling rate divider before initialization
+}
+
+void enableFeatures(void)
+{
+    featureSet(FEATURE_INFLIGHT_ACC_CAL);
+}
 void init(void)
 {
-    systemInit();   
+    systemInit();      
+    malloc_structs();
+    enableFeatures();
+    latchActiveFeatures();
     configureScheduler();
     serialInit(true);            //Initialize soft_serial ports based on USE_SOFTSERIAL1 & USE_SOFTSERIAL2. 
     mspInit();              //initialize values based on enabled features
     mspSerialInit();        //allocate serial ports for each of the msp ports
+    activateConfig();
+    imuInit();              //Initialize IMU angle input based on the imu init struct
+                            //Can be replaced with the code for reading from the sparkfun imu
 
     /*char buffer[5];
     systemInit();   

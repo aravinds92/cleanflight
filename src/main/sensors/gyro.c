@@ -15,6 +15,7 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -56,21 +57,24 @@ static int32_t gyroZero[XYZ_AXIS_COUNT] = { 0, 0, 0 };
 static biquad_t gyroFilterState[3];
 static bool gyroFilterStateIsSet;
 
-PG_REGISTER_WITH_RESET_TEMPLATE(gyroConfig_t, gyroConfig, PG_GYRO_CONFIG, 0);
+bool gyro_initialized = false;
 
-PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
-    .gyro_lpf = GYRO_LPF_256HZ,
-    .soft_gyro_lpf_hz = 100,    // software based lpf filter for gyro
+//PG_REGISTER_WITH_RESET_TEMPLATE(gyroConfig_t, gyroConfig, PG_GYRO_CONFIG, 0);
 
-    .gyroMovementCalibrationThreshold = 32,
-);
+
+void pgResetFn_gyroConfig(void)
+{
+        gyroConfig->gyro_lpf = GYRO_LPF_256HZ;
+        gyroConfig->soft_gyro_lpf_hz = 100;    // software based lpf filter for gyro
+        gyroConfig->gyroMovementCalibrationThreshold = 32;    
+}
 
 static void initGyroFilterCoefficients(void)
 {
-    if (gyroConfig()->soft_gyro_lpf_hz) {
+    if (gyroConfig->soft_gyro_lpf_hz) {
         // Initialisation needs to happen once sampling rate is known
         for (int axis = 0; axis < 3; axis++) {
-            BiQuadNewLpf(gyroConfig()->soft_gyro_lpf_hz, &gyroFilterState[axis], targetLooptime);
+            BiQuadNewLpf(gyroConfig->soft_gyro_lpf_hz, &gyroFilterState[axis], targetLooptime);
         }
         gyroFilterStateIsSet = true;
     }
@@ -144,18 +148,23 @@ static void applyGyroZero(void)
 void gyroUpdate(void)
 {
     // range: +/- 8192; +/- 2000 deg/sec
+    if(!gyro_initialized)
+    {
+        //malloc structs
+        gyro_initialized = true;
+    }
     if (!gyro.read(gyroADCRaw)) {
         return;
     }
-
     // Prepare a copy of int32_t gyroADC for mangling to prevent overflow
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
         gyroADC[axis] = gyroADCRaw[axis];
     }
+    //printf("GyroADC:%d\t%d\t%d\n",gyroADC[0],gyroADC[1],gyroADC[2]);
 
     alignSensors(gyroADC, gyroADC, gyroAlign);
 
-    if (gyroConfig()->soft_gyro_lpf_hz) {
+    if (gyroConfig->soft_gyro_lpf_hz) {
         if (!gyroFilterStateIsSet) {
             initGyroFilterCoefficients();
         }
@@ -165,8 +174,9 @@ void gyroUpdate(void)
     }
 
     if (!isGyroCalibrationComplete()) {
-        performAcclerationCalibration(gyroConfig()->gyroMovementCalibrationThreshold);
+        performAcclerationCalibration(gyroConfig->gyroMovementCalibrationThreshold);
     }
 
     applyGyroZero();
+    //printf("Gyro:%d\t%d\t%d\n",gyroADC[0],gyroADC[1],gyroADC[2]);
 }

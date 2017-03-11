@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <platform.h>
 
@@ -37,7 +38,7 @@
 
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
-#include "drivers/compass.h"
+#include "drivers/drivers_compass.h"
 #include "drivers/system.h"
 #include "drivers/serial.h"
 #include "drivers/adc.h"
@@ -74,7 +75,7 @@
 #define DEFAULT_RX_FEATURE FEATURE_RX_PARALLEL_PWM
 #endif
 
-
+/*
 // Default settings
 STATIC_UNIT_TESTED void resetConf(void)
 {
@@ -154,44 +155,6 @@ STATIC_UNIT_TESTED void resetConf(void)
     for (int i = 1; i < MAX_PROFILE_COUNT; i++) {
         configureRateProfileSelection(i, i % MAX_CONTROL_RATE_PROFILE_COUNT);
     }
-}
-
-static void activateConfig(void)
-{
-    activateControlRateConfig();
-
-    resetAdjustmentStates();
-
-    useRcControlsConfig(modeActivationProfile()->modeActivationConditions);
-
-    pidSetController(pidProfile()->pidController);
-
-#ifdef GPS
-    gpsUsePIDs(pidProfile());
-#endif
-
-    useFailsafeConfig();
-    setAccelerationTrims(&sensorTrims()->accZero);
-
-#ifdef USE_SERVOS
-    mixerUseConfigs(servoProfile()->servoConf);
-#endif
-
-    recalculateMagneticDeclination();
-
-    static imuRuntimeConfig_t imuRuntimeConfig;
-    imuRuntimeConfig.dcm_kp = imuConfig()->dcm_kp / 10000.0f;
-    imuRuntimeConfig.dcm_ki = imuConfig()->dcm_ki / 10000.0f;
-    imuRuntimeConfig.acc_cut_hz = accelerometerConfig()->acc_cut_hz;
-    imuRuntimeConfig.acc_unarmedcal = accelerometerConfig()->acc_unarmedcal;
-    imuRuntimeConfig.small_angle = imuConfig()->small_angle;
-
-    imuConfigure(
-        &imuRuntimeConfig,
-        &accelerometerConfig()->accDeadband,
-        accelerometerConfig()->accz_lpf_cutoff,
-        throttleCorrectionConfig()->throttle_correction_angle
-    );
 }
 
 static void validateAndFixConfig(void)
@@ -358,4 +321,47 @@ void handleOneshotFeatureChangeOnRestart(void)
     if (feature(FEATURE_ONESHOT125) && !featureConfigured(FEATURE_ONESHOT125)) {
         delay(ONESHOT_FEATURE_CHANGED_DELAY_ON_BOOT_MS);
     }
+}*/
+
+void activateConfig(void)       //was declared static
+{
+    //activateControlRateConfig();
+
+    resetAdjustmentStates();
+
+    //useRcControlsConfig(modeActivationProfile()->modeActivationConditions);
+
+    //pidSetController(pidProfile()->pidController);
+
+#ifdef GPS
+    gpsUsePIDs(pidProfile());
+#endif
+
+    //useFailsafeConfig();
+    setAccelerationTrims(&sensorTrims()->accZero);
+
+#ifdef USE_SERVOS
+    mixerUseConfigs(servoProfile()->servoConf);
+#endif
+
+
+    imuConfig->dcm_ki = 100;
+    imuConfig->dcm_kp = 10000;
+
+    //recalculateMagneticDeclination();
+
+    //printf("returned value:%lu\n",accelerometerConfig());
+    static imuRuntimeConfig_t imuRuntimeConfig;
+    imuRuntimeConfig.dcm_kp = imuConfig->dcm_kp / 10000.0f;
+    imuRuntimeConfig.dcm_ki = imuConfig->dcm_ki / 10000.0f;
+    imuRuntimeConfig.acc_cut_hz = accelerometerConfig->acc_cut_hz;
+    imuRuntimeConfig.acc_unarmedcal = accelerometerConfig->acc_unarmedcal;
+    imuRuntimeConfig.small_angle = imuConfig->small_angle;
+
+    imuConfigure(
+        &imuRuntimeConfig,
+        &(accelerometerConfig->accDeadband),
+        accelerometerConfig->accz_lpf_cutoff,
+        throttleCorrectionConfig->throttle_correction_angle
+    );
 }

@@ -110,6 +110,10 @@
 #include "msp/msp_server.h"
 #include "fc/msp_server_fc.h"
 
+#define ROLL_SCALE 1.0
+#define PITCH_SCALE 1.0
+#define YAW_SCALE 1.0
+
 #ifdef USE_SERIAL_4WAY_BLHELI_INTERFACE
 #include "io/serial_4way.h"
 #endif
@@ -248,6 +252,7 @@ static void serializeBoxNamesReply(mspPacket_t *reply)
             continue;                          // box is not enabled
         const box_t *box = findBoxByBoxId(i);
         sbufWriteString(dst, box->boxName);
+        //printf("Box name:%s\n",box->boxName);
         sbufWriteU8(dst, ';');                 // TODO - sbufWriteChar?
     }
 }
@@ -495,14 +500,18 @@ static void serializeDataflashReadReply(mspPacket_t *reply, uint32_t address, in
 // return positive for ACK, negative on error, zero for no reply
 int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 {
-    //printf("Inside command handler\n");
     sbuf_t *dst = &reply->buf;
     sbuf_t *src = &cmd->buf;
+
+    float attitude_roll, attitude_pitch, attitude_yaw;
+
+    static int n = 0;
 
     int len = sbufBytesRemaining(src);
     //printf("%d\n",MSP_BOXNAMES);        
 
-    //printf("command code: %d\n",cmd->cmd);
+    if(cmd->cmd > 8 && cmd->cmd != 160)
+        printf("command code: %d\n",cmd->cmd);
     switch (cmd->cmd) {
         case MSP_API_VERSION:
             //printf("code 1\n");
@@ -550,7 +559,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             break;
 
         case MSP_STATUS:
-            printf("MSP_STATUS\n");
+            //printf("MSP_STATUS\n");
             sbufWriteU16(dst, cycleTime);
 #ifdef USE_I2C
             sbufWriteU16(dst, i2cGetErrorCounter());
@@ -577,7 +586,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
         }
 
         case MSP_DATAFLASH_SUMMARY:
-            printf("MSP_DATAFLASH_SUMMARY\n");
+            //printf("MSP_DATAFLASH_SUMMARY\n");
             serializeDataflashSummaryReply(reply);
             break;
 
@@ -587,37 +596,159 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
 
         case MSP_UID:
-            sbufWriteU32(dst, U_ID_0);
-            sbufWriteU32(dst, U_ID_1);
-            sbufWriteU32(dst, U_ID_2);
+            sbufWriteU32(dst, 0);
+            sbufWriteU32(dst, 0);
+            sbufWriteU32(dst, 0);
             break;
 
 
 
         case MSP_BATTERY_CONFIG:
-            printf("MSP_BATTERY_CONFIG\n");
+            //printf("MSP_BATTERY_CONFIG\n");
             /*sbufWriteU8(dst, batteryConfig()->vbatmincellvoltage);
             sbufWriteU8(dst, batteryConfig()->vbatmaxcellvoltage);
             sbufWriteU8(dst, batteryConfig()->vbatwarningcellvoltage);
             sbufWriteU16(dst, batteryConfig()->batteryCapacity);
             sbufWriteU8(dst, batteryConfig()->amperageMeterSource);*/
+
+            //Showing battery to be full for now
+            sbufWriteU8(dst, 255);
+            sbufWriteU8(dst, 255);
+            sbufWriteU8(dst, 255);
+            sbufWriteU16(dst, 65535);
+            sbufWriteU8(dst, 255);
             break;
 
         case MSP_ACC_TRIM:
-            printf("MSP_ACC_TRIM\n");
-            /*sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.pitch);
-            sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.roll);*/
+            //printf("MSP_ACC_TRIM\n");
+            sbufWriteU16(dst, accelerometerConfig->accelerometerTrims.values.pitch);
+            sbufWriteU16(dst, accelerometerConfig->accelerometerTrims.values.roll);
             break;
 
-
         case MSP_BOXNAMES:
-            printf("MSP_BOXNAMES\n");
+            //printf("MSP_BOXNAMES\n");
             serializeBoxNamesReply(reply);
             break;
 
+        case MSP_VOLTAGE_METERS:
+            // write out voltage, once for each meter.
+            /*for (int i = 0; i < MAX_VOLTAGE_METERS; i++) {
+                uint16_t voltage = getVoltageMeter(i)->vbat;
+                sbufWriteU8(dst, (uint8_t)constrain(voltage, 0, 255));
+            }*/
+            for (int i = 0; i < MAX_VOLTAGE_METERS; i++) {
+                sbufWriteU8(dst, 255);
+            }
+            break;
+
+
+        case MSP_MISC:
+            /*sbufWriteU16(dst, rxConfig()->midrc);
+
+            sbufWriteU16(dst, motorAndServoConfig()->minthrottle);
+            sbufWriteU16(dst, motorAndServoConfig()->maxthrottle);
+            sbufWriteU16(dst, motorAndServoConfig()->mincommand);
+
+            sbufWriteU16(dst, failsafeConfig()->failsafe_throttle);
+
+            #ifdef GPS
+            
+                sbufWriteU8(dst, gpsConfig()->provider); // gps_type
+                sbufWriteU8(dst, 0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
+                sbufWriteU8(dst, gpsConfig()->sbasMode); // gps_ubx_sbas
+            #else
+                sbufWriteU8(dst, 0); // gps_type
+                sbufWriteU8(dst, 0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
+                sbufWriteU8(dst, 0); // gps_ubx_sbas
+            #endif
+            
+            sbufWriteU8(dst, mspServerConfig()->multiwiiCurrentMeterOutput);
+            sbufWriteU8(dst, rxConfig()->rssi_channel);
+            sbufWriteU8(dst, 0);
+
+            sbufWriteU16(dst, compassConfig()->mag_declination);*/
+            sbufWriteU16(dst, 65535);
+
+            sbufWriteU16(dst, 65535);
+            sbufWriteU16(dst, 65535);
+            sbufWriteU16(dst, 65535);
+
+            sbufWriteU16(dst, 65535);
+
+            #ifdef GPS
+            
+                sbufWriteU8(dst, gpsConfig()->provider); // gps_type
+                sbufWriteU8(dst, 0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
+                sbufWriteU8(dst, gpsConfig()->sbasMode); // gps_ubx_sbas
+            #else
+                sbufWriteU8(dst, 0); // gps_type
+                sbufWriteU8(dst, 0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
+                sbufWriteU8(dst, 0); // gps_ubx_sbas
+            #endif
+            
+            sbufWriteU8(dst, 255);
+            sbufWriteU8(dst, 255);
+            sbufWriteU8(dst, 0);
+
+            sbufWriteU16(dst, 65535);
+            
+            break;
+
+        case MSP_ACC_CALIBRATION:
+            printf("Calibrating\n");
+            if (!ARMING_FLAG(ARMED))
+                accSetCalibrationCycles(CALIBRATING_ACC_CYCLES);
+            break;
+
+        case MSP_ATTITUDE:
+            /*attitude_yaw = ((DECIDEGREES_TO_DEGREES(attitude.values.yaw)))*YAW_SCALE;
+            attitude_pitch = attitude.values.pitch*PITCH_SCALE;
+            attitude_roll = attitude.values.roll*ROLL_SCALE;
+
+            sbufWriteU16(dst, (attitude_roll));                            
+            sbufWriteU16(dst, (attitude_pitch));
+            sbufWriteU16(dst, attitude_yaw);*/
+
+            sbufWriteU16(dst, n);                            
+            sbufWriteU16(dst, n);
+            sbufWriteU16(dst, n);
+            n+=10;
+            break;
+
+
+        case MSP_ANALOG: {
+            /*amperageMeter_t *amperageMeter = getAmperageMeter(batteryConfig()->amperageMeterSource);
+
+            sbufWriteU8(dst, (uint8_t)constrain(vbat, 0, 255));
+            sbufWriteU16(dst, (uint16_t)constrain(amperageMeter->mAhDrawn, 0, 0xFFFF)); // milliamp hours drawn from battery
+            sbufWriteU16(dst, rssi);
+
+            if (mspServerConfig()->multiwiiCurrentMeterOutput) {
+                sbufWriteU16(dst, (uint16_t)constrain(amperageMeter->amperage * 10, 0, 0xFFFF)); // send amperage in 0.001 A steps. Negative range is truncated to zero
+            } else {
+                sbufWriteU16(dst, (int16_t)constrain(amperageMeter->amperage, -0x8000, 0x7FFF)); // send amperage in 0.01 A steps, range is -320A to 320A
+            }
+            break;*/
+
+            sbufWriteU8(dst, 0);
+            sbufWriteU16(dst, 65535); // milliamp hours drawn from battery
+            sbufWriteU16(dst, 65535);
+
+            sbufWriteU16(dst, 65535); // send amperage in 0.001 A steps. Negative range is truncated to zero
+            
+            break;
+        }
+
+        case MSP_RESET_CONF:
+            //EEPROM not used here
+            /*if (!ARMING_FLAG(ARMED)) {
+                resetEEPROM();
+                readEEPROM();
+            }*/
+            break;
 
         default:
-            printf("Unknown\n");
+            //printf("Unknown\n");
             break;
 
 
@@ -664,12 +795,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
                 sbufWriteU16(dst, rcData[i]);
             break;
 
-        case MSP_ATTITUDE:
-            sbufWriteU16(dst, attitude.values.roll);
-            sbufWriteU16(dst, attitude.values.pitch);
-            sbufWriteU16(dst, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
-            break;
-
         case MSP_ALTITUDE:
 #if defined(BARO) || defined(SONAR)
             sbufWriteU32(dst, altitudeHoldGetEstimatedAltitude());
@@ -688,20 +813,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 #endif
             break;
 
-        case MSP_ANALOG: {
-            amperageMeter_t *amperageMeter = getAmperageMeter(batteryConfig()->amperageMeterSource);
-
-            sbufWriteU8(dst, (uint8_t)constrain(vbat, 0, 255));
-            sbufWriteU16(dst, (uint16_t)constrain(amperageMeter->mAhDrawn, 0, 0xFFFF)); // milliamp hours drawn from battery
-            sbufWriteU16(dst, rssi);
-
-            if (mspServerConfig()->multiwiiCurrentMeterOutput) {
-                sbufWriteU16(dst, (uint16_t)constrain(amperageMeter->amperage * 10, 0, 0xFFFF)); // send amperage in 0.001 A steps. Negative range is truncated to zero
-            } else {
-                sbufWriteU16(dst, (int16_t)constrain(amperageMeter->amperage, -0x8000, 0x7FFF)); // send amperage in 0.01 A steps, range is -320A to 320A
-            }
-            break;
-        }
 
         case MSP_ARMING_CONFIG:
             sbufWriteU8(dst, armingConfig()->auto_disarm_delay);
@@ -766,31 +877,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
         case MSP_BOXIDS:
             serializeBoxIdsReply(reply);
-            break;
-
-        case MSP_MISC:
-            sbufWriteU16(dst, rxConfig()->midrc);
-
-            sbufWriteU16(dst, motorAndServoConfig()->minthrottle);
-            sbufWriteU16(dst, motorAndServoConfig()->maxthrottle);
-            sbufWriteU16(dst, motorAndServoConfig()->mincommand);
-
-            sbufWriteU16(dst, failsafeConfig()->failsafe_throttle);
-
-#ifdef GPS
-            sbufWriteU8(dst, gpsConfig()->provider); // gps_type
-            sbufWriteU8(dst, 0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
-            sbufWriteU8(dst, gpsConfig()->sbasMode); // gps_ubx_sbas
-#else
-            sbufWriteU8(dst, 0); // gps_type
-            sbufWriteU8(dst, 0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
-            sbufWriteU8(dst, 0); // gps_ubx_sbas
-#endif
-            sbufWriteU8(dst, mspServerConfig()->multiwiiCurrentMeterOutput);
-            sbufWriteU8(dst, rxConfig()->rssi_channel);
-            sbufWriteU8(dst, 0);
-
-            sbufWriteU16(dst, compassConfig()->mag_declination);
             break;
 
         case MSP_MOTOR_PINS:
@@ -1019,13 +1105,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
                 // write out amperage, once for each current meter.
                 sbufWriteU16(dst, (uint16_t)constrain(meter->amperage * 10, 0, 0xFFFF)); // send amperage in 0.001 A steps. Negative range is truncated to zero
                 sbufWriteU32(dst, meter->mAhDrawn);
-            }
-            break;
-        case MSP_VOLTAGE_METERS:
-            // write out voltage, once for each meter.
-            for (int i = 0; i < MAX_VOLTAGE_METERS; i++) {
-                uint16_t voltage = getVoltageMeter(i)->vbat;
-                sbufWriteU8(dst, (uint8_t)constrain(voltage, 0, 255));
             }
             break;
 
@@ -1273,18 +1352,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             sensorAlignmentConfig()->gyro_align = sbufReadU8(src);
             sensorAlignmentConfig()->acc_align = sbufReadU8(src);
             sensorAlignmentConfig()->mag_align = sbufReadU8(src);
-            break;
-
-        case MSP_RESET_CONF:
-            if (!ARMING_FLAG(ARMED)) {
-                resetEEPROM();
-                readEEPROM();
-            }
-            break;
-
-        case MSP_ACC_CALIBRATION:
-            if (!ARMING_FLAG(ARMED))
-                accSetCalibrationCycles(CALIBRATING_ACC_CYCLES);
             break;
 
         case MSP_MAG_CALIBRATION:

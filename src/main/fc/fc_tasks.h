@@ -27,7 +27,6 @@ typedef enum {
 #ifdef MAG
     TASK_COMPASS,
 #endif
-    TEST,
     TASK_ACCEL,
     TASK_GYROPID,
 #ifdef BEEPER

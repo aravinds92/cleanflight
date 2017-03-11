@@ -18,6 +18,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 #include <platform.h>
 
@@ -73,9 +75,9 @@ int32_t accADC[XYZ_AXIS_COUNT];
 acc_t acc;                       // acc access functions
 sensor_align_e accAlign = 0;
 
-uint16_t calibratingA = 0;      // the calibration is done is the main loop. Calibrating decreases at each cycle down to 0, then we enter in a normal mode.
+uint16_t calibratingA = 1;      // the calibration is done is the main loop. Calibrating decreases at each cycle down to 0, then we enter in a normal mode.
 
-bool initialized = false;
+bool acc_initialized = false;
 
 extern uint16_t InflightcalibratingA;
 extern bool AccInflightCalibrationArmed;
@@ -209,11 +211,10 @@ static void convertRawACCADCReadingsToInternalType(int16_t *accADCRaw)
 
 void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 {
-    if(!initialized)
+    if(!acc_initialized)
     {
         accelerationTrims = (flightDynamicsTrims_t *)malloc(sizeof(flightDynamicsTrims_t));
-        accelerometerConfig_ProfileCurrent = (accelerometerConfig_t*)malloc(sizeof(accelerometerConfig_t));
-        initialized = true;
+        acc_initialized = true;
     }
     
     int16_t accADCRaw[XYZ_AXIS_COUNT];
@@ -235,6 +236,7 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
     }
 
     applyAccelerationTrims(accelerationTrims);
+    //printf("Acc:%d\t%d\t%d\n",accADC[0],accADC[1],accADC[2]);
 }
 
 void setAccelerationTrims(flightDynamicsTrims_t *accelerationTrimsToUse)

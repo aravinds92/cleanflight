@@ -1,6 +1,4 @@
 /*
- * This file is part of Cleanflight.
- *
  * Cleanflight is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -33,12 +31,12 @@ PG_REGISTER(featureConfig_t, featureConfig, PG_FEATURE_CONFIG, 0);
 
 void latchActiveFeatures()
 {
-    activeFeaturesLatch = featureConfig()->enabledFeatures;
+    activeFeaturesLatch = featureConfig->enabledFeatures;
 }
 
 bool featureConfigured(uint32_t mask)
 {
-    return featureConfig()->enabledFeatures & mask;
+    return featureConfig->enabledFeatures & mask;
 }
 
 bool feature(uint32_t mask)
@@ -48,20 +46,20 @@ bool feature(uint32_t mask)
 
 void featureSet(uint32_t mask)
 {
-    featureConfig()->enabledFeatures |= mask;
+    featureConfig->enabledFeatures |= mask;
 }
 
 void featureClear(uint32_t mask)
 {
-    featureConfig()->enabledFeatures &= ~(mask);
+    featureConfig->enabledFeatures &= ~(mask);
 }
 
 void featureClearAll()
 {
-    featureConfig()->enabledFeatures = 0;
+    featureConfig->enabledFeatures = 0;
 }
 
 uint32_t featureMask(void)
 {
-    return featureConfig()->enabledFeatures;
+    return featureConfig->enabledFeatures;
 }

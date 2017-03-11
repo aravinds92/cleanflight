@@ -113,32 +113,12 @@ PG_RESET_TEMPLATE(pidProfile_t, pidProfile,                 //Define members of 
     .horizon_tilt_effect = 75,
     .horizon_tilt_mode = HORIZON_TILT_MODE_SAFE,
 );
-
+/*
 void pidResetITerm(void)
 {
     for (int axis = 0; axis < 3; axis++) {
         lastITerm[axis] = 0;
         lastITermf[axis] = 0.0f;
-    }
-}
-
-void pidSetController(pidControllerType_e type)
-{
-    switch (type) {
-        default:
-        case PID_CONTROLLER_MWREWRITE:
-            pid_controller = pidMultiWiiRewrite;
-            break;
-#ifndef SKIP_PID_LUXFLOAT
-        case PID_CONTROLLER_LUX_FLOAT:
-            pid_controller = pidLuxFloat;
-            break;
-#endif
-#ifndef SKIP_PID_MW23
-        case PID_CONTROLLER_MW23:
-            pid_controller = pidMultiWii23;
-            break;
-#endif
     }
 }
 
@@ -215,4 +195,24 @@ int calcHorizonLevelStrength(uint16_t rxConfigMidrc, int horizonTiltEffect,
         }
     }
     return constrain(horizonLevelStrength, 0, 100);
+}*/
+
+void pidSetController(pidControllerType_e type)
+{
+    switch (type) {
+        default:
+        case PID_CONTROLLER_MWREWRITE:
+            pid_controller = pidMultiWiiRewrite;
+            break;
+#ifndef SKIP_PID_LUXFLOAT
+        case PID_CONTROLLER_LUX_FLOAT:
+            pid_controller = pidLuxFloat;
+            break;
+#endif
+#ifndef SKIP_PID_MW23
+        case PID_CONTROLLER_MW23:
+            pid_controller = pidMultiWii23;
+            break;
+#endif
+    }
 }

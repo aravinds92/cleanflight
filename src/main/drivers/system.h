@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "drivers/SFE_LSM9DS0.h"
+
 void systemInit(void);
 
 void delayMicroseconds(uint32_t us);
@@ -50,3 +52,5 @@ typedef enum {
 } failureMode_e;
 
 //void init_sensors(void);
+
+LSM9DS0_t* imu;

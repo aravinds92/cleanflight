@@ -63,7 +63,7 @@ struct timespec current;
 
 
 //Sensor initializtion
-LSM9DS0_t* imu;
+extern LSM9DS0_t* imu;
 
 mag_t mag;
 
@@ -106,7 +106,7 @@ void init_sensors(void)
 
 
     imu_setup(imu, 0x6B, 0x1D);
-    uint16_t imuResult = begin(imu, G_SCALE_500DPS, A_SCALE_4G, M_SCALE_4GS, G_ODR_190_BW_25, A_ODR_125, M_ODR_625);
+    uint16_t imuResult = begin(imu, G_SCALE_2000DPS, A_SCALE_4G, M_SCALE_4GS, G_ODR_190_BW_25, A_ODR_125, M_ODR_625);
     printf("the sensor initialization result is 0x%x\n",imuResult);
     return;    
 }
@@ -120,7 +120,7 @@ void systemInit(void)                                       //Refer below for or
     //required for system up time
     clock_gettime(CLOCK, &start);                           //mark start time
     //printf("Original:%lu\n",(start.tv_sec*BILLION + start.tv_nsec)/1000);
-    //init_sensors();
+    init_sensors();
 }
 
 void delay(uint32_t ms)         //delay by the given number of milli seconds

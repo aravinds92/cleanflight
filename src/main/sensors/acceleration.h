@@ -65,10 +65,17 @@ typedef struct accelerometerConfig_s {
     uint8_t acc_unarmedcal;                 // turn automatic acc compensation on/off
 } accelerometerConfig_t;
 
-PG_DECLARE_PROFILE(accelerometerConfig_t, accelerometerConfig);
+
+accelerometerConfig_t* accelerometerConfig;
+
+//static inline accelerometerConfig_t* accelerometerConfig(void);
+
+
+//PG_DECLARE_PROFILE(accelerometerConfig_t, accelerometerConfig);
 
 bool isAccelerationCalibrationComplete(void);
 void accSetCalibrationCycles(uint16_t calibrationCyclesRequired);
 void resetRollAndPitchTrims(rollAndPitchTrims_t *rollAndPitchTrims);
 void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims);
 void setAccelerationTrims(flightDynamicsTrims_t *accelerationTrimsToUse);
+void pgResetFn_accelerometerConfig(accelerometerConfig_t *instance);
