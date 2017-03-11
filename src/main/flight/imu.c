@@ -66,7 +66,8 @@
 
 #define GyroMeasError M_PIf * (40.0f / 180.0f)       // gyroscope measurement error in rads/s (shown as 3 deg/s)
 #define GyroMeasDrift M_PIf * (0.0f / 180.0f)      // gyroscope measurement drift in rad/s/s (shown as 0.0 deg/s/s)
-#define beta sqrt(3.0f / 4.0f) * GyroMeasError   // compute beta
+//#define beta sqrt(3.0f / 4.0f) * GyroMeasError   // compute beta
+#define beta 0.04f   // compute beta
 #define zeta sqrt(3.0f / 4.0f) * GyroMeasDrift   // compute zeta, the other free parameter in the Madgwick scheme usually set to a small or zero value
 
 
@@ -395,15 +396,6 @@ STATIC_UNIT_TESTED void imuUpdateEulerAngles(void)
     } else {
         DISABLE_STATE(SMALL_ANGLE);
     }
-    
-
-    /*for(i=0;i<3;i++)
-    {
-        for(j=0;j<3;j++)
-            printf("%f\t",rMat[i][j]);
-        printf("\n");
-    }
-    printf("\n");    */
 }
 
 bool imuIsAircraftArmable(uint8_t arming_angle)
@@ -441,7 +433,7 @@ static bool isMagnetometerHealthy(void)
 }
 #endif
 
-/*static void imuCalculateEstimatedAttitude(void)
+static void imuCalculateEstimatedAttitude(void)     //default algorithm to calculate attitude
 {
     static pt1Filter_t accLPFState[3];
     static uint32_t previousIMUUpdateTime;
@@ -492,7 +484,7 @@ static bool isMagnetometerHealthy(void)
 
     imuCalculateAcceleration(deltaT); // rotate acc vector into earth frame
     return;
-}*/
+}
 
 void imuUpdateAccelerometer(rollAndPitchTrims_t *accelerometerTrims)
 {
@@ -576,6 +568,9 @@ void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, 
   float q3q4 = qc * qd;
   float q4q4 = qd * qd;
 
+  float max;
+  int i;
+
   // Normalise accelerometer measurement
   norm = sqrt(ax * ax + ay * ay + az * az);
   if (norm == 0.0f) return; // handle NaN
@@ -640,12 +635,6 @@ void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, 
   q3 = q[3];
 
   imuComputeRotationMatrix();
-
-  imuUpdateEulerAngles();
-
-  imuCalculateAcceleration(deltat); // rotate acc vector into earth frame
-
-  //printf("attitude:%d\t%d\t%d\n",attitude.values.roll, attitude.values.pitch, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
 }
 
 
@@ -667,5 +656,21 @@ void calculateAttitude(void)
     gz = calcGyro(imu,imu->gz);
 
     MadgwickQuaternionUpdate(ax, ay, az, gx*M_PIf/180.0f, gy*M_PIf/180.0f, gz*M_PIf/180.0f, mx, my, mz);
+
+    imuUpdateEulerAngles();
+
+    imuCalculateAcceleration(deltat); // rotate acc vector into earth frame
+
+    /*if(abs(attitude.values.roll) > abs(attitude.values.pitch))
+        max = attitude.values.roll;
+    else
+        max = attitude.values.pitch;
+
+    if(max < abs(DECIDEGREES_TO_DEGREES(attitude.values.yaw)))
+        max = abs(DECIDEGREES_TO_DEGREES(attitude.values.yaw));
+
+    printf("attitude:%f\n",max);*/
+    
+    //printf("attitude:%d\t%d\t%d\n",(attitude.values.roll%360), (attitude.values.pitch%360), (DECIDEGREES_TO_DEGREES(attitude.values.yaw)));
 
 }
