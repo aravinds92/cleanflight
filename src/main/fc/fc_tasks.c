@@ -53,7 +53,7 @@ cfTask_t cfTasks[] = {
         .staticPriority = TASK_PRIORITY_LOW,
     },
 
-/*#ifdef MAG
+#ifdef MAG
     [TASK_COMPASS] = {
         .taskName = "COMPASS",
         .taskFunc = taskUpdateCompass,
@@ -73,7 +73,7 @@ cfTask_t cfTasks[] = {
         .taskFunc = taskMainPidLoopChecker,
         .desiredPeriod = TASK_PERIOD_US(100),                 //period of 1 ms
         .staticPriority = TASK_PRIORITY_REALTIME,
-    }*/
+    }
 };
 
 #if 0
