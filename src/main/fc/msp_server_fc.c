@@ -110,9 +110,9 @@
 #include "msp/msp_server.h"
 #include "fc/msp_server_fc.h"
 
-#define ROLL_SCALE 1.0
-#define PITCH_SCALE 1.0
-#define YAW_SCALE 1.0
+#define ROLL_SCALE 5
+#define PITCH_SCALE 5
+#define YAW_SCALE 1
 
 #ifdef USE_SERIAL_4WAY_BLHELI_INTERFACE
 #include "io/serial_4way.h"
@@ -701,18 +701,18 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             break;
 
         case MSP_ATTITUDE:
-            /*attitude_yaw = ((DECIDEGREES_TO_DEGREES(attitude.values.yaw)))*YAW_SCALE;
+            attitude_yaw = ((DECIDEGREES_TO_DEGREES(attitude.values.yaw)))*YAW_SCALE;
             attitude_pitch = attitude.values.pitch*PITCH_SCALE;
             attitude_roll = attitude.values.roll*ROLL_SCALE;
 
             sbufWriteU16(dst, (attitude_roll));                            
             sbufWriteU16(dst, (attitude_pitch));
-            sbufWriteU16(dst, attitude_yaw);*/
+            sbufWriteU16(dst, attitude_yaw-180);
 
-            sbufWriteU16(dst, n);                            
-            sbufWriteU16(dst, n);
-            sbufWriteU16(dst, n);
-            n+=10;
+            /*sbufWriteU16(dst, -215);                            
+            sbufWriteU16(dst, -74);
+            sbufWriteU16(dst, 352);
+            n+=10;*/
             break;
 
 

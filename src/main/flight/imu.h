@@ -32,6 +32,16 @@ extern int32_t accSum[XYZ_AXIS_COUNT];
 #define DECIDEGREES_TO_RADIANS(angle) ((angle / 10.0f) * 0.0174532925f)
 #define DEGREES_TO_RADIANS(angle) ((angle) * 0.0174532925f)
 
+
+
+/*enum UpdateMethod
+{
+    DEFAULT = 0,
+    MADGWICK = 1,
+    MAHONY = 2
+};*/
+
+
 typedef union {
     int16_t raw[XYZ_AXIS_COUNT];
     struct {
@@ -49,8 +59,8 @@ typedef struct imuConfig_s {
     uint16_t looptime;                      // imu loop time in us
     uint8_t gyroSync;                       // Enable interrupt based loop
     uint8_t gyroSyncDenominator;            // Gyro sync Denominator
-    uint16_t dcm_kp;                        // DCM filter proportional gain ( x 10000)
-    uint16_t dcm_ki;                        // DCM filter integral gain ( x 10000)
+    uint32_t dcm_kp;                        // DCM filter proportional gain ( x 10000)
+    uint32_t dcm_ki;                        // DCM filter integral gain ( x 10000)
     uint8_t small_angle;                    // Angle used for mag hold threshold.
     uint16_t max_angle_inclination;         // max inclination allowed in angle (level) mode. default 500 (50 degrees).
 } imuConfig_t;
@@ -96,5 +106,7 @@ void imuResetAccelerationSum(void);
 
 bool imuIsAircraftArmable(uint8_t arming_angle);
 
-void calculateAttitude(void);
+void MadgwickcalculateAttitude(void);
 void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
+void MahonycalculateAttitude();
+void updateEulerAngles(float q0, float q1, float q2, float q3);
