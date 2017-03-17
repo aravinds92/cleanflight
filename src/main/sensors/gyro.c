@@ -44,14 +44,10 @@
 
 #include "sensors/gyro.h"
 
-#define INTEGRAL_COUNT 10
-
 extern gyro_t gyro;                      // gyro access functions
 sensor_align_e gyroAlign = 0;
 
 int32_t gyroADC[XYZ_AXIS_COUNT];
-
-int16_t roll[INTEGRAL_COUNT], pitch[INTEGRAL_COUNT], yaw[INTEGRAL_COUNT];       //for integrating
 
 
 static uint16_t calibratingG = 0;
@@ -160,8 +156,6 @@ void gyroUpdate(void)
     if (!gyro.read(gyroADCRaw)) {
         return;
     }
-
-    integrate();
     // Prepare a copy of int32_t gyroADC for mangling to prevent overflow
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
         gyroADC[axis] = gyroADCRaw[axis];
@@ -185,34 +179,4 @@ void gyroUpdate(void)
 
     applyGyroZero();
     //printf("Gyro:%d\t%d\t%d\n",gyroADC[0],gyroADC[1],gyroADC[2]);
-}
-
-void integrate(void)
-{
-    static int i = 0;    
-    int j=0;
-    int16_t roll_sum=0, pitch_sum=0, yaw_sum=0;
-    roll[i] = gyroADCRaw[0];
-    pitch[i] = gyroADCRaw[1];
-    yaw[i] = gyroADCRaw[2];
-    i++;
-
-    if(i>INTEGRAL_COUNT)                //reset the value of i to 0 if it exceeds array size
-        i=0;
-
-    for(j=0;j<INTEGRAL_COUNT;j++)
-    {
-        if((roll[j] == 0) && (pitch[j] == 0) && (yaw[j] == 0))
-            break;
-        else
-        {
-            roll_sum += roll[j];
-            pitch_sum += pitch[j];
-            yaw_sum += yaw[j];
-        }
-    }
-
-    gyroADCRaw[0] = ceil(roll_sum/j);
-    gyroADCRaw[1] = ceil(pitch_sum/j);
-    gyroADCRaw[2] = ceil(yaw_sum/j);
 }

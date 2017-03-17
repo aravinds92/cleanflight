@@ -1172,8 +1172,8 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 
 ################EDISON TARGETS##########################
 #Main target. Link all .o files to create executable
-run:
-	chrt --rr 99 out/cleanflight
+run: compile
+	out/cleanflight
 
 compile: objs
 	$(CC) $(shell find $(OBJ_DIR) -name '*.o') -o $(OUTPUT_DIR)$(FILE_NAME) $(LIB_FLAGS)		#Compile .o files into executable

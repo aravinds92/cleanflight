@@ -46,4 +46,3 @@ void gyroSetCalibrationCycles(uint16_t calibrationCyclesRequired);
 void gyroUpdate(void);
 bool isGyroCalibrationComplete(void);
 void pgResetFn_gyroConfig(void);
-void integrate(void);
