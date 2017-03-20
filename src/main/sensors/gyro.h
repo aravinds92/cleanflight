@@ -47,3 +47,4 @@ void gyroUpdate(void);
 bool isGyroCalibrationComplete(void);
 void pgResetFn_gyroConfig(void);
 void integrate(void);
+void calibrateGyro(void);

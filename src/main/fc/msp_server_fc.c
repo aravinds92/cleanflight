@@ -110,8 +110,8 @@
 #include "msp/msp_server.h"
 #include "fc/msp_server_fc.h"
 
-#define ROLL_SCALE 5
-#define PITCH_SCALE 5
+#define ROLL_SCALE 1
+#define PITCH_SCALE 1
 #define YAW_SCALE 1
 
 #ifdef USE_SERIAL_4WAY_BLHELI_INTERFACE

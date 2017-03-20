@@ -69,7 +69,7 @@
 #define GyroMeasError M_PIf * (40.0f / 180.0f)       // gyroscope measurement error in rads/s (shown as 3 deg/s)
 #define GyroMeasDrift M_PIf * (0.0f / 180.0f)      // gyroscope measurement drift in rad/s/s (shown as 0.0 deg/s/s)
 //#define beta sqrt(3.0f / 4.0f) * GyroMeasError   // compute beta = 0.604
-#define beta 0.1   // compute beta, usually 0.04
+#define beta 0.01   // compute beta, usually 0.04
 #define zeta sqrt(3.0f / 4.0f) * GyroMeasDrift   // compute zeta, the other free parameter in the Madgwick scheme usually set to a small or zero value
 
 
@@ -98,8 +98,6 @@ float deltat = 0.0f;        // integration interval for both filter schemes
 uint16_t now = 0;           // used to calculate integration interval
 
 float mahonyErrors[3] = {0.0, 0.0, 0.0};
-
-
 
 static bool isAccelUpdatedAtLeastOnce = false;
 
@@ -260,10 +258,39 @@ void imuCalculateAcceleration(uint32_t deltaT)
     accSumCount++;
 }
 
-static float invSqrt(float x)
+/*static float invSqrt(float x)
 {
     return 1.0f / sqrtf(x);
+}*/
+
+int instability_fix = 1;
+
+float invSqrt(float x) {
+    if (instability_fix == 0)
+    {
+        /* original code */
+        float halfx = 0.5f * x;
+        float y = x;
+        long i = *(long*)&y;
+        i = 0x5f3759df - (i>>1);
+        y = *(float*)&i;
+        y = y * (1.5f - (halfx * y * y));
+        return y;
+    }
+    else if (instability_fix == 1)
+    {
+        /* close-to-optimal  method with low cost from http://pizer.wordpress.com/2008/10/12/fast-inverse-square-root */
+        unsigned int i = 0x5F1F1412 - (*(unsigned int*)&x >> 1);
+        float tmp = *(float*)&i;
+        return tmp * (1.69000231f - 0.714158168f * x * tmp * tmp);
+    }
+    else
+    {
+        /* optimal but expensive method: */
+        return 1.0f / sqrtf(x);
+    }
 }
+
 
 static bool imuUseFastGains(void)
 {
@@ -563,101 +590,174 @@ int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value)
     return lrintf(throttle_correction_value * sin_approx(angle / (900.0f * M_PIf / 2.0f)));
 }
 
+
+void MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
+    float recipNorm;
+    float s0, s1, s2, s3;
+    float qDot1, qDot2, qDot3, qDot4;
+    float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
+
+    // Rate of change of quaternion from gyroscope
+    qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
+    qDot2 = 0.5f * (q0 * gx + q2 * gz - q3 * gy);
+    qDot3 = 0.5f * (q0 * gy - q1 * gz + q3 * gx);
+    qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);
+
+    // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+    if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
+
+        // Normalise accelerometer measurement
+        recipNorm = invSqrt(ax * ax + ay * ay + az * az);
+        ax *= recipNorm;
+        ay *= recipNorm;
+        az *= recipNorm;   
+
+        // Auxiliary variables to avoid repeated arithmetic
+        _2q0 = 2.0f * q0;
+        _2q1 = 2.0f * q1;
+        _2q2 = 2.0f * q2;
+        _2q3 = 2.0f * q3;
+        _4q0 = 4.0f * q0;
+        _4q1 = 4.0f * q1;
+        _4q2 = 4.0f * q2;
+        _8q1 = 8.0f * q1;
+        _8q2 = 8.0f * q2;
+        q0q0 = q0 * q0;
+        q1q1 = q1 * q1;
+        q2q2 = q2 * q2;
+        q3q3 = q3 * q3;
+
+        // Gradient decent algorithm corrective step
+        s0 = _4q0 * q2q2 + _2q2 * ax + _4q0 * q1q1 - _2q1 * ay;
+        s1 = _4q1 * q3q3 - _2q3 * ax + 4.0f * q0q0 * q1 - _2q0 * ay - _4q1 + _8q1 * q1q1 + _8q1 * q2q2 + _4q1 * az;
+        s2 = 4.0f * q0q0 * q2 + _2q0 * ax + _4q2 * q3q3 - _2q3 * ay - _4q2 + _8q2 * q1q1 + _8q2 * q2q2 + _4q2 * az;
+        s3 = 4.0f * q1q1 * q3 - _2q1 * ax + 4.0f * q2q2 * q3 - _2q2 * ay;
+        recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); // normalise step magnitude
+        s0 *= recipNorm;
+        s1 *= recipNorm;
+        s2 *= recipNorm;
+        s3 *= recipNorm;
+
+        // Apply feedback step
+        qDot1 -= beta * s0;
+        qDot2 -= beta * s1;
+        qDot3 -= beta * s2;
+        qDot4 -= beta * s3;
+    }
+
+    // Integrate rate of change of quaternion to yield quaternion
+    q0 += qDot1 * deltat;
+    q1 += qDot2 * deltat;
+    q2 += qDot3 * deltat;
+    q3 += qDot4 * deltat;
+
+    // Normalise quaternion
+    recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+    q0 *= recipNorm;
+    q1 *= recipNorm;
+    q2 *= recipNorm;
+    q3 *= recipNorm;
+}
+
+
+
 void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
-float qa = q[0], qb = q[1], qc = q[2], qd = q[3];   // short name local variable for readability
-    float norm;
-    float hx, hy, _2bx, _2bz;
-    float s1, s2, s3, s4;
+    float recipNorm;
+    float s0, s1, s2, s3;
     float qDot1, qDot2, qDot3, qDot4;
+    float hx, hy;
+    float _2q0mx, _2q0my, _2q0mz, _2q1mx, _2bx, _2bz, _4bx, _4bz, _2q0, _2q1, _2q2, _2q3, _2q0q2, _2q2q3, q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3;
+    float _8bx, _8bz;
 
-    // Auxiliary variables to avoid repeated arithmetic
-    float _2q1mx;
-    float _2q1my;
-    float _2q1mz;
-    float _2q2mx;
-    float _4bx;
-    float _4bz;
-    float _2q1 = 2.0f * qa;
-    float _2q2 = 2.0f * qb;
-    float _2q3 = 2.0f * qc;
-    float _2q4 = 2.0f * qd;
-    float _2q1q3 = 2.0f * qa * qc;
-    float _2q3q4 = 2.0f * qc * qd;
-    float q1q1 = qa * qa;
-    float q1q2 = qa * qb;
-    float q1q3 = qa * qc;
-    float q1q4 = qa * qd;
-    float q2q2 = qb * qb;
-    float q2q3 = qb * qc;
-    float q2q4 = qb * qd;
-    float q3q3 = qc * qc;
-    float q3q4 = qc * qd;
-    float q4q4 = qd * qd;
+    // Use IMU algorithm if magnetometer measurement invalid (avoids NaN in magnetometer normalisation)
+    if((mx == 0.0f) && (my == 0.0f) && (mz == 0.0f)) {
+        MadgwickAHRSupdateIMU(gx, gy, gz, ax, ay, az);
+        return;
+    }
 
-    // Normalise accelerometer measurement
-    norm = sqrt(ax * ax + ay * ay + az * az);
-    if (norm == 0.0f) return; // handle NaN
-    norm = 1.0f/norm;
-    ax *= norm;
-    ay *= norm;
-    az *= norm;
+    // Rate of change of quaternion from gyroscope
+    qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
+    qDot2 = 0.5f * (q0 * gx + q2 * gz - q3 * gy);
+    qDot3 = 0.5f * (q0 * gy - q1 * gz + q3 * gx);
+    qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);
 
-    // Normalise magnetometer measurement
-    norm = sqrt(mx * mx + my * my + mz * mz);
-    if (norm == 0.0f) return; // handle NaN
-    norm = 1.0f/norm;
-    mx *= norm;
-    my *= norm;
-    mz *= norm;
+    // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+    if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
 
-    // Reference direction of Earth's magnetic field
-    _2q1mx = 2.0f * qa * mx;
-    _2q1my = 2.0f * qa * my;
-    _2q1mz = 2.0f * qa * mz;
-    _2q2mx = 2.0f * qb * mx;
-    hx = mx * q1q1 - _2q1my * qd + _2q1mz * qc + mx * q2q2 + _2q2 * my * qc + _2q2 * mz * qd - mx * q3q3 - mx * q4q4;
-    hy = _2q1mx * qd + my * q1q1 - _2q1mz * qb + _2q2mx * qc - my * q2q2 + my * q3q3 + _2q3 * mz * qd - my * q4q4;
-    _2bx = sqrt(hx * hx + hy * hy);
-    _2bz = -_2q1mx * qc + _2q1my * qb + mz * q1q1 + _2q2mx * qd - mz * q2q2 + _2q3 * my * qd - mz * q3q3 + mz * q4q4;
-    _4bx = 2.0f * _2bx;
-    _4bz = 2.0f * _2bz;
+        // Normalise accelerometer measurement
+        recipNorm = invSqrt(ax * ax + ay * ay + az * az);
+        ax *= recipNorm;
+        ay *= recipNorm;
+        az *= recipNorm;   
 
-    // Gradient decent algorithm corrective step
-    s1 = -_2q3 * (2.0f * q2q4 - _2q1q3 - ax) + _2q2 * (2.0f * q1q2 + _2q3q4 - ay) - _2bz * qc * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (-_2bx * qd + _2bz * qb) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + _2bx * qc * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
-    s2 = _2q4 * (2.0f * q2q4 - _2q1q3 - ax) + _2q1 * (2.0f * q1q2 + _2q3q4 - ay) - 4.0f * qb * (1.0f - 2.0f * q2q2 - 2.0f * q3q3 - az) + _2bz * qd * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (_2bx * qc + _2bz * qa) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + (_2bx * qd - _4bz * qb) * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
-    s3 = -_2q1 * (2.0f * q2q4 - _2q1q3 - ax) + _2q4 * (2.0f * q1q2 + _2q3q4 - ay) - 4.0f * qc * (1.0f - 2.0f * q2q2 - 2.0f * q3q3 - az) + (-_4bx * qc - _2bz * qa) * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (_2bx * qb + _2bz * qd) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + (_2bx * qa - _4bz * qc) * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
-    s4 = _2q2 * (2.0f * q2q4 - _2q1q3 - ax) + _2q3 * (2.0f * q1q2 + _2q3q4 - ay) + (-_4bx * qd + _2bz * qb) * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (-_2bx * qa + _2bz * qc) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + _2bx * qb * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
-    norm = sqrt(s1 * s1 + s2 * s2 + s3 * s3 + s4 * s4);    // normalise step magnitude
-    norm = 1.0f/norm;
-    s1 *= norm;
-    s2 *= norm;
-    s3 *= norm;
-    s4 *= norm;
+        // Normalise magnetometer measurement
+        recipNorm = invSqrt(mx * mx + my * my + mz * mz);
+        mx *= recipNorm;
+        my *= recipNorm;
+        mz *= recipNorm;
 
-    // Compute rate of change of quaternion
-    qDot1 = 0.5f * (-qb * gx - qc * gy - qd * gz) - beta * s1;
-    qDot2 = 0.5f * (qa * gx + qc * gz - qd * gy) - beta * s2;
-    qDot3 = 0.5f * (qa * gy - qb * gz + qd * gx) - beta * s3;
-    qDot4 = 0.5f * (qa * gz + qb * gy - qc * gx) - beta * s4;
+        // Auxiliary variables to avoid repeated arithmetic
+        _2q0mx = 2.0f * q0 * mx;
+        _2q0my = 2.0f * q0 * my;
+        _2q0mz = 2.0f * q0 * mz;
+        _2q1mx = 2.0f * q1 * mx;
+        _2q0 = 2.0f * q0;
+        _2q1 = 2.0f * q1;
+        _2q2 = 2.0f * q2;
+        _2q3 = 2.0f * q3;
+        _2q0q2 = 2.0f * q0 * q2;
+        _2q2q3 = 2.0f * q2 * q3;
+        q0q0 = q0 * q0;
+        q0q1 = q0 * q1;
+        q0q2 = q0 * q2;
+        q0q3 = q0 * q3;
+        q1q1 = q1 * q1;
+        q1q2 = q1 * q2;
+        q1q3 = q1 * q3;
+        q2q2 = q2 * q2;
+        q2q3 = q2 * q3;
+        q3q3 = q3 * q3;
 
-    // Integrate to yield quaternion
-    qa += qDot1 * deltat;
-    qb += qDot2 * deltat;
-    qc += qDot3 * deltat;
-    qd += qDot4 * deltat;
-    norm = sqrt(qa * qa + qb * qb + qc * qc + qd * qd);    // normalise quaternion
-    norm = 1.0f/norm;
-    q[0] = qa * norm;
-    q[1] = qb * norm;
-    q[2] = qc * norm;
-    q[3] = qd * norm;
+        // Reference direction of Earth's magnetic field
+        hx = mx * q0q0 - _2q0my * q3 + _2q0mz * q2 + mx * q1q1 + _2q1 * my * q2 + _2q1 * mz * q3 - mx * q2q2 - mx * q3q3;
+        hy = _2q0mx * q3 + my * q0q0 - _2q0mz * q1 + _2q1mx * q2 - my * q1q1 + my * q2q2 + _2q2 * mz * q3 - my * q3q3;
+        _2bx = sqrt(hx * hx + hy * hy);
+        _2bz = -_2q0mx * q2 + _2q0my * q1 + mz * q0q0 + _2q1mx * q3 - mz * q1q1 + _2q2 * my * q3 - mz * q2q2 + mz * q3q3;
 
+        _4bx = 2.0f * _2bx;
+        _4bz = 2.0f * _2bz;
+        _8bx = 2.0f * _4bx;
+        _8bz = 2.0f * _4bz;
 
-    q0 = q[0];
-    q1 = q[1];
-    q2 = q[2];
-    q3 = q[3];
+        // Gradient decent algorithm corrective step
+        s0= -_2q2*(2*(q1q3 - q0q2) - ax)    +   _2q1*(2*(q0q1 + q2q3) - ay)   +  -_4bz*q2*(_4bx*(0.5 - q2q2 - q3q3) + _4bz*(q1q3 - q0q2) - mx)   +   (-_4bx*q3+_4bz*q1)*(_4bx*(q1q2 - q0q3) + _4bz*(q0q1 + q2q3) - my)    +   _4bx*q2*(_4bx*(q0q2 + q1q3) + _4bz*(0.5 - q1q1 - q2q2) - mz);
+        s1= _2q3*(2*(q1q3 - q0q2) - ax) +   _2q0*(2*(q0q1 + q2q3) - ay) +   -4*q1*(2*(0.5 - q1q1 - q2q2) - az)    +   _4bz*q3*(_4bx*(0.5 - q2q2 - q3q3) + _4bz*(q1q3 - q0q2) - mx)   + (_4bx*q2+_4bz*q0)*(_4bx*(q1q2 - q0q3) + _4bz*(q0q1 + q2q3) - my)   +   (_4bx*q3-_8bz*q1)*(_4bx*(q0q2 + q1q3) + _4bz*(0.5 - q1q1 - q2q2) - mz);             
+        s2= -_2q0*(2*(q1q3 - q0q2) - ax)    +     _2q3*(2*(q0q1 + q2q3) - ay)   +   (-4*q2)*(2*(0.5 - q1q1 - q2q2) - az) +   (-_8bx*q2-_4bz*q0)*(_4bx*(0.5 - q2q2 - q3q3) + _4bz*(q1q3 - q0q2) - mx)+(_4bx*q1+_4bz*q3)*(_4bx*(q1q2 - q0q3) + _4bz*(q0q1 + q2q3) - my)+(_4bx*q0-_8bz*q2)*(_4bx*(q0q2 + q1q3) + _4bz*(0.5 - q1q1 - q2q2) - mz);
+        s3= _2q1*(2*(q1q3 - q0q2) - ax) +   _2q2*(2*(q0q1 + q2q3) - ay)+(-_8bx*q3+_4bz*q1)*(_4bx*(0.5 - q2q2 - q3q3) + _4bz*(q1q3 - q0q2) - mx)+(-_4bx*q0+_4bz*q2)*(_4bx*(q1q2 - q0q3) + _4bz*(q0q1 + q2q3) - my)+(_4bx*q1)*(_4bx*(q0q2 + q1q3) + _4bz*(0.5 - q1q1 - q2q2) - mz);        s0 *= recipNorm;
+        s1 *= recipNorm;
+        s2 *= recipNorm;
+        s3 *= recipNorm;
+
+        // Apply feedback step
+        qDot1 -= beta * s0;
+        qDot2 -= beta * s1;
+        qDot3 -= beta * s2;
+        qDot4 -= beta * s3;
+    }
+
+    // Integrate rate of change of quaternion to yield quaternion
+    q0 += qDot1 * deltat;
+    q1 += qDot2 * deltat;
+    q2 += qDot3 * deltat;
+    q3 += qDot4 * deltat;
+
+    // Normalise quaternion
+    recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+    q0 *= recipNorm;
+    q1 *= recipNorm;
+    q2 *= recipNorm;
+    q3 *= recipNorm;
 
     imuComputeRotationMatrix();
 }
@@ -679,6 +779,19 @@ void MadgwickcalculateAttitude(void)
     gx = calcGyro(imu,imu->gx);   // Convert to degrees per seconds
     gy = calcGyro(imu,imu->gy);
     gz = calcGyro(imu,imu->gz);
+
+
+    /*ax = imu->ax;   // Convert to g's
+    ay = imu->ay;
+    az = imu->az;
+
+    mx = imu->mx;     // Convert to Gauss
+    my = imu->my;
+    mz = imu->mz;
+
+    gx = imu->gx;   // Convert to degrees per seconds
+    gy = imu->gy;
+    gz = imu->gz;*/
 
     MadgwickQuaternionUpdate(ax, ay, az, gx*M_PIf/180.0f, gy*M_PIf/180.0f, gz*M_PIf/180.0f, mx, my, mz);
 
@@ -805,21 +918,16 @@ void updateEulerAngles(float q0, float q1, float q2, float q3)
     attitude.values.pitch *= 180.0f / M_PIf;
     attitude.values.roll = atan2(2.0f * (q0 * q1 + q2 * q3), q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
     attitude.values.roll *= 180.0f / M_PIf;*/
-    //int yaw = atan2(2.0f * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3);
-    q0 = 1;
-    q1 = 0;
-    q2 = 0;
-    q3 = 0;
 
-    //printf("%d\n",atan2(2.0f * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3));
-
-    int yaw = atan2(2.0f * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3);
+    float yaw = atan2(2.0f * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3);
     yaw *= 180.0f / M_PIf - 13.8f; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
-    int pitch = -asin(2.0f * (q1 * q3 - q0 * q2));
+    float pitch = -asin(2.0f * (q1 * q3 - q0 * q2));
     pitch *= 180.0f / M_PIf;
-    int roll = atan2(2.0f * (q0 * q1 + q2 * q3), q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
+    float roll = atan2(2.0f * (q0 * q1 + q2 * q3), q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
     roll *= 180.0f / M_PIf;
-    //printf("%d\t%d\t%d\n",roll, pitch, yaw);
+
+    printf("%f\t%f\t%f\n",roll, pitch, yaw);
+
 }
 
 
