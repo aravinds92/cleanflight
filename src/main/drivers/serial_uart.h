@@ -39,7 +39,7 @@
 #define UART5_TX_BUFFER_SIZE    256
 
 #define SELECT_TIMEOUT 0
-#define SELECT_TIMEOUT_US 750000
+#define SELECT_TIMEOUT_US 75000
 
 __IO uint32_t receiveLength;
 

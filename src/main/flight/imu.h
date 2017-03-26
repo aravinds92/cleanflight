@@ -46,9 +46,9 @@ typedef union {
     int16_t raw[XYZ_AXIS_COUNT];
     struct {
         // absolute angle inclination in multiple of 0.1 degree    180 deg = 1800
-        int16_t roll;
-        int16_t pitch;
-        int16_t yaw;
+        float roll;
+        float pitch;
+        float yaw;
     } values;
 } attitudeEulerAngles_t;
 
@@ -109,4 +109,5 @@ bool imuIsAircraftArmable(uint8_t arming_angle);
 void MadgwickcalculateAttitude(void);
 void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
 void MahonycalculateAttitude();
-void updateEulerAngles(float q0, float q1, float q2, float q3);
+void updateEulerAngles(void);
+void tick(void);

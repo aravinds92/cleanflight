@@ -52,8 +52,7 @@ cfTask_t cfTasks[] = {
                                                         //period of 10 ms
         .staticPriority = TASK_PRIORITY_LOW,
     },
-
-    #ifdef MAG
+#ifdef MAG
     [TASK_COMPASS] = {
         .taskName = "COMPASS",
         .taskFunc = taskUpdateCompass,
@@ -65,16 +64,17 @@ cfTask_t cfTasks[] = {
     [TASK_ACCEL] = {
         .taskName = "ACCEL",
         .taskFunc = taskUpdateAccelerometer,
-        .desiredPeriod = TASK_PERIOD_HZ(1000),                 //period of 1 us
+        .desiredPeriod = TASK_PERIOD_HZ(100),                 //period of 1 us
         .staticPriority = TASK_PRIORITY_MEDIUM,
     },
     [TASK_GYROPID] = {
         .taskName = "GYRO/PID",
         .taskFunc = taskMainPidLoopChecker,
-        .desiredPeriod = TASK_PERIOD_HZ(100),                 //period of 1 ms
+        .desiredPeriod = TASK_PERIOD_HZ(1000),                 //period of 1 ms
         .staticPriority = TASK_PRIORITY_REALTIME,
     }
 };
+
 #if 0
 cfTask_t cfTasks[] = {
     [TASK_SYSTEM] = {

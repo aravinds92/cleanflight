@@ -766,7 +766,7 @@ void configureScheduler(void)
     setTaskEnabled(TASK_SYSTEM, true);
     setTaskEnabled(TASK_SERIAL, true);
 #ifdef MAG
-    setTaskEnabled(TASK_COMPASS, true);
+    //setTaskEnabled(TASK_COMPASS, true);
 #endif    
     setTaskEnabled(TASK_ACCEL, true);
     setTaskEnabled(TASK_GYROPID, true);

@@ -110,10 +110,6 @@
 #include "msp/msp_server.h"
 #include "fc/msp_server_fc.h"
 
-#define ROLL_SCALE 1
-#define PITCH_SCALE 1
-#define YAW_SCALE 1
-
 #ifdef USE_SERIAL_4WAY_BLHELI_INTERFACE
 #include "io/serial_4way.h"
 #endif
@@ -534,6 +530,8 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             break;
 
         case MSP_BOARD_INFO:
+            //clear destination buffer here
+            //memcpy(dst,"\0",BUILD_DATE_LENGTH+BUILD_TIME_LENGTH+GIT_SHORT_REVISION_LENGTH);
             sbufWriteData(dst, boardIdentifier, BOARD_IDENTIFIER_LENGTH);
 
 #ifdef USE_HARDWARE_REVISION_DETECTION
@@ -695,24 +693,15 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             break;
 
         case MSP_ACC_CALIBRATION:
-            printf("Calibrating\n");
             if (!ARMING_FLAG(ARMED))
                 accSetCalibrationCycles(CALIBRATING_ACC_CYCLES);
             break;
 
         case MSP_ATTITUDE:
-            attitude_yaw = ((DECIDEGREES_TO_DEGREES(attitude.values.yaw)))*YAW_SCALE;
-            attitude_pitch = attitude.values.pitch*PITCH_SCALE;
-            attitude_roll = attitude.values.roll*ROLL_SCALE;
-
-            sbufWriteU16(dst, (attitude_roll));                            
-            sbufWriteU16(dst, (attitude_pitch));
-            sbufWriteU16(dst, attitude_yaw-180);
-
-            /*sbufWriteU16(dst, -215);                            
-            sbufWriteU16(dst, -74);
-            sbufWriteU16(dst, 352);
-            n+=10;*/
+            
+            sbufWriteU16(dst, (attitude.values.roll)*10);                            
+            sbufWriteU16(dst, (attitude.values.pitch)*10);
+            sbufWriteU16(dst, attitude.values.yaw);
             break;
 
 

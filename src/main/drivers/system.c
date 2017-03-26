@@ -31,8 +31,7 @@
 //#include "flight/imu.h"
 
 #define CLOCK CLOCK_MONOTONIC_RAW
-#define BILLION 1000000000L
-
+#define MILLION 1000000
 //#include <platform.h>
 
 //#include "build/build_config.h"
@@ -75,11 +74,15 @@ gyro_t gyro;
 uint32_t micros(void)
 {
     clock_gettime(CLOCK, &current);             //mark the current time
-    sysTickUptime = (BILLION * (current.tv_sec - start.tv_sec) + current.tv_nsec - start.tv_nsec)/1000;   
-    usTicks = sysTickUptime;                    //For compatibility
-    //For checking
-    //printf("Original:%lu\tCurrent:%lu\tDifference:%lu\n",(start.tv_sec*BILLION + start.tv_nsec)/1000, (current.tv_sec*BILLION + current.tv_nsec)/1000, (BILLION * (current.tv_sec - start.tv_sec) + current.tv_nsec - start.tv_nsec)/1000);
+    sysTickUptime = (MILLION * (current.tv_sec - start.tv_sec) + (current.tv_nsec - start.tv_nsec)/1000);   
     return sysTickUptime;
+}
+
+uint32_t micros_total(void)
+{
+    clock_gettime(CLOCK, &current);             //mark the current time
+    usTicks = (MILLION * current.tv_sec) + (current.tv_nsec)/1000;   
+    return usTicks;
 }
 
 //return system up time in milliseconds
@@ -127,6 +130,26 @@ void delay(uint32_t ms)         //delay by the given number of milli seconds
 {
     usleep(1000*ms);
 }
+
+
+void readMarg(float* ax, float* ay, float* az, float* gx, float* gy, float* gz, float* mx, float* my, float* mz)
+{
+    readAccel(imu);
+    *ax = calcAccel(imu, imu->ax);
+    *ay = calcAccel(imu, imu->ay);
+    *az = calcAccel(imu, imu->az);
+
+    readGyro(imu);
+    *gx = calcGyro(imu, imu->gx);
+    *gy = calcGyro(imu, imu->gy);
+    *gz = calcGyro(imu, imu->gz);
+
+    readMag(imu);
+    *mx = calcMag(imu, imu->mx);
+    *my = calcMag(imu, imu->my);
+    *mz = calcMag(imu, imu->mz);    
+}
+
 /*
 void systemInit(void)
 {
