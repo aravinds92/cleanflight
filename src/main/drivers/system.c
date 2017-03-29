@@ -32,6 +32,7 @@
 
 #define CLOCK CLOCK_MONOTONIC_RAW
 #define MILLION 1000000
+#define mHz 500
 //#include <platform.h>
 
 //#include "build/build_config.h"
@@ -47,7 +48,8 @@
 // cycles per microsecond
 static uint32_t usTicks = 0;            //Used to calculate time elapsed in microseconds
                                         //Same as sysTickUptime. Maintained for compatibility reasons
-                                        
+//uint32_t lastUpdate;                                        
+
 
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
 static volatile uint32_t sysTickUptime = 0;     //gives time in us
@@ -149,6 +151,23 @@ void readMarg(float* ax, float* ay, float* az, float* gx, float* gy, float* gz, 
     *my = calcMag(imu, imu->my);
     *mz = calcMag(imu, imu->mz);    
 }
+
+uint64_t rdtsc(void) 
+{
+  uint64_t x;
+  __asm__ volatile ("rdtsc" : "=A" (x));
+  return x;
+}
+
+
+/*float tick()
+{
+  uint64_t now;
+  now = rdtsc();
+  float dt = (now - lastUpdate) / (mHz * 1000000.0f);
+  lastUpdate = now;
+  return dt;
+}*/
 
 /*
 void systemInit(void)

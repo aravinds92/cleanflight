@@ -70,7 +70,7 @@ cfTask_t cfTasks[] = {
     [TASK_GYROPID] = {
         .taskName = "GYRO/PID",
         .taskFunc = taskMainPidLoopChecker,
-        .desiredPeriod = TASK_PERIOD_HZ(1000),                 //period of 1 ms
+        .desiredPeriod = TASK_PERIOD_HZ(100),                 //period of 1 ms
         .staticPriority = TASK_PRIORITY_REALTIME,
     }
 };
