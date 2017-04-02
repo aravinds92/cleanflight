@@ -22,6 +22,7 @@
 
 #include <platform.h>
 #include <stdio.h>
+#include <pthread.h>
 
 
 #include "build/debug.h"                
@@ -55,6 +56,7 @@
 #include "sensors/acceleration.h"
 
 #include "flight/imu.h"
+
 
 /*
 
