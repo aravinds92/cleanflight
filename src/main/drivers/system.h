@@ -37,7 +37,7 @@ bool isMPUSoftReset(void);
 
 void enableGPIOPowerUsageAndNoiseReductions(void);
 
-uint32_t micros_total(void);
+float micros_total(void);
 void readMarg(float* ax, float* ay, float* az, float* gx, float* gy, float* gz, float* mx, float* my, float* mz);
 uint64_t rdtsc(void);
 // current crystal frequency - 8 or 12MHz

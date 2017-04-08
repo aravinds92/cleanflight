@@ -96,9 +96,9 @@ float throttleAngleScale;
 float fc_acc;
 float smallAngleCosZ = 0;
 
-uint16_t lastUpdate = 0;    // used to calculate integration interval
-uint16_t deltat = 0.0f;        // integration interval for both filter schemes
-uint16_t now = 0;           // used to calculate integration interval
+float lastUpdate = 0;    // used to calculate integration interval
+float deltat = 0.0f;        // integration interval for both filter schemes
+float now = 0;           // used to calculate integration interval
 
 float mahonyErrors[3] = {0.0, 0.0, 0.0};
 
@@ -669,7 +669,7 @@ void updateEulerAngles(void)
     attitude.values.roll = atan2(2.0f * (q0 * q1 + q2 * q3), q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
     attitude.values.roll *= 180.0f / M_PIf;
 
-    printf("attitude:%f\t%f\t%f\n",attitude.values.roll, attitude.values.pitch, attitude.values.yaw);
+    //printf("attitude:%f\t%f\t%f\n",attitude.values.roll, attitude.values.pitch, attitude.values.yaw);
 }
 
 
@@ -706,6 +706,6 @@ void MahonycalculateAttitude()
     gz = calcGyro(imu,imu->gz);
 
     MahonyQuaternionUpdate(ax, ay, az, gx*M_PIf/180.0f, gy*M_PIf/180.0f, gz*M_PIf/180.0f, mx, my, mz);
-    imuCalculateAcceleration(deltat); // rotate acc vector into earth frame
+    imuCalculateAcceleration((uint32_t)deltat); // rotate acc vector into earth frame
 
 }

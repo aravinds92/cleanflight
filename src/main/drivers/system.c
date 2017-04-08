@@ -32,6 +32,7 @@
 
 #define CLOCK CLOCK_MONOTONIC_RAW
 #define MILLION 1000000
+#define BILLION 1000000000
 #define mHz 500
 //#include <platform.h>
 
@@ -46,7 +47,7 @@
 //#include "system.h"
 
 // cycles per microsecond
-static uint32_t usTicks = 0;            //Used to calculate time elapsed in microseconds
+static float usTicks = 0;            //Used to calculate time elapsed in microseconds
                                         //Same as sysTickUptime. Maintained for compatibility reasons
 //uint32_t lastUpdate;                                        
 
@@ -80,10 +81,10 @@ uint32_t micros(void)
     return sysTickUptime;
 }
 
-uint32_t micros_total(void)
+float micros_total(void)
 {
     clock_gettime(CLOCK, &current);             //mark the current time
-    usTicks = (MILLION * current.tv_sec) + (current.tv_nsec)/1000;   
+    usTicks =  current.tv_sec + (current.tv_nsec)/BILLION;   
     return usTicks;
 }
 
