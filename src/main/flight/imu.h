@@ -111,3 +111,4 @@ void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, 
 void MahonycalculateAttitude();
 void updateEulerAngles(void);
 void tick(void);
+void imuCalculateEstimatedAttitude(void);

@@ -114,6 +114,10 @@
 #include "io/serial_4way.h"
 #endif
 
+#define ROLL_SCALE 10
+#define PITCH_SCALE 10
+#define YAW_SCALE 1
+
 extern uint16_t cycleTime; // FIXME dependency on mw.c
 extern uint16_t rssi; // FIXME dependency on mw.c
 extern void resetPidProfile(pidProfile_t *pidProfile);
@@ -699,9 +703,9 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
         case MSP_ATTITUDE:
             
-            sbufWriteU16(dst, (attitude.values.roll)*10);                            
-            sbufWriteU16(dst, (attitude.values.pitch)*10);
-            sbufWriteU16(dst, attitude.values.yaw);
+            sbufWriteU16(dst, attitude.values.roll*ROLL_SCALE);
+            sbufWriteU16(dst, attitude.values.pitch*PITCH_SCALE);
+            sbufWriteU16(dst, attitude.values.yaw*YAW_SCALE);
             break;
 
 
