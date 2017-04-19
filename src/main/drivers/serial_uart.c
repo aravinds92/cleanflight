@@ -72,7 +72,7 @@ LINE_CODING linecoding =
 
 char portname[20] = edison_port;
 
-int rdlen;                                  //for measring the number of data bytes read
+int rdlen;                                  //for measring the number of data bytes read  --AS--
 
 
 serialPort_t usb_port;
@@ -92,7 +92,7 @@ static const struct serialPortVTable usbTable[] = {
     }
 };
 
-void usartInitAllIOSignals(void)        //usartIrqHandler() not setup in the original version of cleanflight in this function
+void usartInitAllIOSignals(void)        //usartIrqHandler() not setup in the original version of cleanflight in this function  --AS--
 {
 #ifdef EDISON
     USB.deviceState = UNCONNECTED;
@@ -103,17 +103,16 @@ void usartInitAllIOSignals(void)        //usartIrqHandler() not setup in the ori
 }
 
 
-serialPort_t* usbInit(void)
+serialPort_t* usbInit(void)             //open usb port and set port attributes  --AS--
 {
     int fd = usbOpen();
-    //sleep(2); //required to make flush work, for some reason
     tcflush(fd,TCIOFLUSH);
     SetUsbAttributes(fd);    
     return &USB.port;
 }
 
 
-int usbOpen(void)
+int usbOpen(void)             
 {
     int fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC | O_NONBLOCK);
     if (fd < 0) {
@@ -126,7 +125,7 @@ int usbOpen(void)
 }
 
 
-void SetUsbAttributes(int fd)       //UART characteristics hardcoded here!!!
+void SetUsbAttributes(int fd)       //UART characteristics hardcoded here!!!  --AS--
 {
     struct termios tty;
 
@@ -139,8 +138,8 @@ void SetUsbAttributes(int fd)       //UART characteristics hardcoded here!!!
     cfsetispeed(&tty, (speed_t)(linecoding.bitrate));
 
 
-    //These values are hardcoded for now
-    //Todo is to change this based on the value defined in the struct LINE_CODING
+    //These values are hardcoded for now  --AS--
+    //Todo is to change this based on the value defined in the struct LINE_CODING  --AS--
     tty.c_cflag |= (CLOCAL | CREAD);    //ignore modem controls
     tty.c_cflag &= ~CSIZE;
     tty.c_cflag |= CS8;         //8-bit characters
@@ -157,9 +156,9 @@ void SetUsbAttributes(int fd)       //UART characteristics hardcoded here!!!
 }
 
 
-uint32_t usbWrite(uint8_t* str, int len)
+uint32_t usbWrite(uint8_t* str, int len)                    //write data into usb port  --AS--
 {
-    //Don't write if USB is not connected
+    //Don't write if USB is not connected  --AS--
     if(usbIsConnected() == false)
     {
         printf("USB not connected\t%d\n",USB.deviceState);
@@ -171,7 +170,7 @@ uint32_t usbWrite(uint8_t* str, int len)
 }
 
 
-int32_t usbRead(uint8_t* buf, int len)
+int32_t usbRead(uint8_t* buf, int len)                      //read data into buffer if data_available flag is set  --AS--
 {
     if(!data_available)
     {
@@ -229,7 +228,7 @@ void usb_txbuffer_flush(serialPort_t *instance)
     return;
 }
 
-uint8_t serial_waiting(serialPort_t *instance)
+uint8_t serial_waiting(serialPort_t *instance)                  //use select to determine if there is data on the port. If so, read data into local buffer and set data_available flag  --AS--
 {
     
     if(!data_read)
@@ -238,12 +237,12 @@ uint8_t serial_waiting(serialPort_t *instance)
     }    
 
     UNUSED(instance);
-    fd_set readset;                             //for the select function
+    fd_set readset;                             //for the select function  --AS--
     FD_ZERO(&readset);
     FD_SET(USB.fd, &readset);
     uint32_t result;
         
-    struct timeval tv = {SELECT_TIMEOUT, SELECT_TIMEOUT_US};   // sleep for ten minutes!
+    struct timeval tv = {SELECT_TIMEOUT, SELECT_TIMEOUT_US};  
 
     result = select(USB.fd + 1, &readset, NULL, NULL, &tv);
 
@@ -262,7 +261,7 @@ uint8_t serial_waiting(serialPort_t *instance)
 
 
 
-//Wrapper functions
+//Wrapper functions  --AS--
 
 static void usbVcpWrite(serialPort_t *instance, uint8_t c)
 {

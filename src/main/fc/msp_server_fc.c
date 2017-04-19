@@ -520,7 +520,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             sbufWriteU8(dst, API_VERSION_MINOR);
             break;
 
-        case MSP_FC_VARIANT:
+        case MSP_FC_VARIANT:            //MSP_FC_VARIANT merged with MSP_FC_VERSION  --AS--
             sbufWriteData(dst, flightControllerIdentifier, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
             sbufWriteU8(dst, FC_VERSION_MAJOR);
             sbufWriteU8(dst, FC_VERSION_MINOR);

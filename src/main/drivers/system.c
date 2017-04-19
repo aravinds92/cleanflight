@@ -47,13 +47,13 @@
 //#include "system.h"
 
 // cycles per microsecond
-static float usTicks = 0;            //Used to calculate time elapsed in microseconds
-                                        //Same as sysTickUptime. Maintained for compatibility reasons
+static float usTicks = 0;            //Used to calculate time elapsed in microseconds  --AS--
+                                        //Same as sysTickUptime. Maintained for compatibility reasons  --AS--
 //uint32_t lastUpdate;                                        
 
 
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
-static volatile uint32_t sysTickUptime = 0;     //gives time in us
+static volatile uint32_t sysTickUptime = 0;     //gives time in us  --AS--
 
 //Start value of system time
 struct timespec start;
@@ -76,16 +76,17 @@ gyro_t gyro;
 //return system up time in microseconds
 uint32_t micros(void)
 {
-    clock_gettime(CLOCK, &current);             //mark the current time
+    clock_gettime(CLOCK, &current);             //mark the current time  --AS--
     sysTickUptime = (MILLION * (current.tv_sec - start.tv_sec) + (current.tv_nsec - start.tv_nsec)/1000);   
     return sysTickUptime;
 }
 
-float micros_total(void)
+float time_in_seconds(void)                     //return time in seconds for attitude calculation
 {
+    float seconds;
     clock_gettime(CLOCK, &current);             //mark the current time
-    usTicks =  current.tv_sec + (current.tv_nsec)/BILLION;   
-    return usTicks;
+    seconds =  current.tv_sec + (current.tv_nsec)/BILLION;   
+    return seconds;         //return time in seconds
 }
 
 //return system up time in milliseconds
@@ -95,7 +96,7 @@ uint32_t millis(void)
 }
 
 
-void init_sensors(void)
+void init_sensors(void)                             //initialize sensor structs
 {
 
     imu = (LSM9DS0_t*)malloc(sizeof(LSM9DS0_t));
@@ -122,20 +123,20 @@ void init_sensors(void)
 //Initialize critical system components
 void systemInit(void)                                       //Refer below for original function
 {
-    usartInitAllIOSignals();                                //Replace with code for initializing uart
+    usartInitAllIOSignals();                                //Replace with code for initializing uart  --AS--
     //required for system up time
-    clock_gettime(CLOCK, &start);                           //mark start time
+    clock_gettime(CLOCK, &start);                           //mark start time  --AS--
     //printf("Original:%lu\n",(start.tv_sec*BILLION + start.tv_nsec)/1000);
     init_sensors();
 }
 
-void delay(uint32_t ms)         //delay by the given number of milli seconds
+void delay(uint32_t ms)         //delay by the given number of milli seconds  --AS--
 {
     usleep(1000*ms);
 }
 
 
-void readMarg(float* ax, float* ay, float* az, float* gx, float* gy, float* gz, float* mx, float* my, float* mz)
+void readMarg(float* ax, float* ay, float* az, float* gx, float* gy, float* gz, float* mx, float* my, float* mz)            //read acc, gyro and mag values into the pointers  --AS--
 {
     readAccel(imu);
     *ax = calcAccel(imu, imu->ax);

@@ -84,6 +84,8 @@
 //For finding delta
 #define mHz 500
 
+#define MILLION 1000000
+
 
 int16_t accSmooth[XYZ_AXIS_COUNT];
 int32_t accSum[XYZ_AXIS_COUNT];
@@ -332,12 +334,13 @@ int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value)
 
 void MadgwickcalculateAttitude(void)
 {
-    float ax, ay, az, gx, gy, gz, mx, my, mz; // variables to hold latest sensor data values    
+    float ax, ay, az, gx, gy, gz, mx, my, mz; // variables to hold latest sensor data values  --AS--
 
     readMarg(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
     MadgwickQuaternionUpdate(ax, ay, az, gx*M_PIf/180.0f, gy*M_PIf/180.0f, gz*M_PIf/180.0f, mx, my, mz);
     updateEulerAngles();
     tick();
+    imuCalculateAcceleration(deltat*MILLION);
 }
 
 void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
@@ -449,7 +452,7 @@ void updateEulerAngles(void)
 
 void tick(void)
 {
-    now = micros_total();
-    deltat = (now - lastUpdate); // set integration time by time elapsed since last filter update
+    now = time_in_seconds();
+    deltat = (now - lastUpdate); // set integration time by time elapsed since last filter update  --AS--
     lastUpdate = now;
 }

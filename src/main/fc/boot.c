@@ -811,7 +811,7 @@ void configureScheduler(void)
 #endif*/
 }
 
-void malloc_structs(void)
+void malloc_structs(void)                   //global structs for running the code  --AS--
 {
     accelerometerConfig = (accelerometerConfig_t*)malloc(sizeof(accelerometerConfig_t));
     memset(accelerometerConfig,0,sizeof(accelerometerConfig_t));
@@ -839,17 +839,17 @@ void enableFeatures(void)
 }
 void init(void)
 {
-    systemInit();      
+    systemInit();               //initialize functions and features for the system to run  --AS--
     malloc_structs();
-    enableFeatures();
-    latchActiveFeatures();
-    configureScheduler();
-    serialInit(true);            //Initialize soft_serial ports based on USE_SOFTSERIAL1 & USE_SOFTSERIAL2. 
-    mspInit();              //initialize values based on enabled features
-    mspSerialInit();        //allocate serial ports for each of the msp ports
+    enableFeatures();           
+    latchActiveFeatures();      //Read active features into global variable  --AS--
+    configureScheduler();       
+    serialInit(true);            //Initialize soft_serial ports based on USE_SOFTSERIAL1 & USE_SOFTSERIAL2.   --AS--
+    mspInit();              //initialize values based on enabled features  --AS--
+    mspSerialInit();        //allocate serial ports for each of the msp ports  --AS--
     activateConfig();
-    imuInit();              //Initialize IMU angle input based on the imu init struct
-                            //Can be replaced with the code for reading from the sparkfun imu
+    imuInit();              //Initialize IMU angle input based on the imu init struct  --AS--
+                            //Can be replaced with the code for reading from the sparkfun imu  --AS--
 
     /*char buffer[5];
     systemInit();   
@@ -868,12 +868,6 @@ int main(void)
     {
         scheduler();
     }
-
-    /*while(1)
-    {
-        usbRead(buffer,1);
-        printf("%s\n",buffer);
-    }*/
     
     return 0;
 
