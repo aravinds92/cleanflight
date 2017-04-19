@@ -260,32 +260,31 @@ COMMON = 	\
 			src/main/common/typeconversion.c
 
 DRIVERS = 	\
-			src/main/drivers/serial.c \
-			src/main/drivers/bus_i2c_edison.c \
-			src/main/drivers/system.c \
-			src/main/drivers/timer_setup.c \
-			src/main/drivers/serial.c \
-			src/main/drivers/serial_uart.c \
-			src/main/drivers/pwm_output.c \
-			src/main/drivers/pwm_mapping.c \
-			src/main/drivers/pwm_rx.c \
-			src/main/drivers/gpio_edison.c \
-			src/main/drivers/SFE_LSM9DS0.c \
-			src/main/drivers/compass_sparkfun.c \
-			src/main/drivers/acc_sparkfun.c \
-			src/main/drivers/gyro_sparkfun.c \
-			src/main/drivers/gyro_sync.c
+			src/main/drivers/bus_i2c_edison.c \         #Edited(irrelevant)\
+			src/main/drivers/system.c \        			#Edited\
+			src/main/drivers/timer_setup.c \	        #Edited(irrelevant)\
+			src/main/drivers/serial.c \					#Edited(irrelevant)\
+			src/main/drivers/serial_uart.c \        	#Edited\
+			src/main/drivers/pwm_output.c \				#Edited(irrelevant)\
+			src/main/drivers/pwm_mapping.c \			#Edited(irrelevant)\
+			src/main/drivers/pwm_rx.c \					#Edited(irrelevant)\
+			src/main/drivers/gpio_edison.c \			#Edited(irrelevant)\
+			src/main/drivers/SFE_LSM9DS0.c \			#Edited\
+			src/main/drivers/compass_sparkfun.c \		#Edited\
+			src/main/drivers/acc_sparkfun.c \			#Edited\
+			src/main/drivers/gyro_sparkfun.c \			#Edited\
+			src/main/drivers/gyro_sync.c                #Edited
 
 
 VCP = 		\
 			src/main/vcp/hw_config.c
 
 FC = 		\
-			src/main/fc/fc_tasks.c \
-			src/main/fc/msp_server_fc.c \
-			src/main/fc/cleanflight_fc.c \
+			src/main/fc/fc_tasks.c \#Edited\
+			src/main/fc/msp_server_fc.c \#Edited\
+			src/main/fc/cleanflight_fc.c \#Edited\
 			src/main/fc/runtime_config.c \
-			src/main/fc/config.c \
+			src/main/fc/config.c \#Edited\
 			src/main/fc/rate_profile.c \
 			src/main/fc/rc_adjustments.c \
 			src/main/fc/rc_controls.c \
@@ -296,14 +295,14 @@ IO = 		\
 			src/main/io/beeper.c
 
 MSP = 		\
-			src/main/msp/msp_serial.c \
+			src/main/msp/msp_serial.c \#Edited\
 			src/main/msp/msp.c
 
 
 VERSION = 	\
 			src/main/build/version.c
 CONFIG = 	\
-		    src/main/config/parameter_group.c \
+		    src/main/config/parameter_group.c \#Edited(in .h file)\
 			src/main/config/feature.c \
 			src/main/config/profile.c			
 
@@ -318,14 +317,14 @@ RX = 		\
 			#src/main/rx/pwm.c
 
 FLIGHT = 	\
-			src/main/flight/imu.c
+			src/main/flight/imu.c                     #Edited
 
-MAIN =		src/main/fc/boot.c
+MAIN =		src/main/fc/boot.c                        #Edited
 
-SENSORS = 	src/main/sensors/compass.c \
+SENSORS = 	src/main/sensors/compass.c \              #Edited\
 			src/main/sensors/boardalignment.c \
-			src/main/sensors/acceleration.c \
-			src/main/sensors/gyro.c			
+			src/main/sensors/acceleration.c \         #Edited\
+			src/main/sensors/gyro.c					  #Edited
 
 EDISON_SRC = \
 			$(CONFIG) \
